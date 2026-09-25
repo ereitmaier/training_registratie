@@ -1,0 +1,120 @@
+---
+training_onderdelen:
+  mode: "simpel"
+  basisvaardigheden:
+    titel: "A Basisvaardigheden"
+    onderdelen:
+      - id: 1
+        naam: "Dribbelen en drijven"
+        duur_minuten: 10
+        intensiteit: "laag"
+        materiaal:
+          - "pylonen"
+          - "ballen"
+      - id: 2
+        naam: "Kappen en draaien"
+        duur_minuten: 10
+        intensiteit: "gemiddeld"
+        materiaal:
+          - "pylonen"
+          - "ballen"
+      - id: 3
+        naam: "Aan- en meenemen"
+        duur_minuten: 10
+        intensiteit: "gemiddeld"
+        materiaal:
+          - "ballen"
+          - "hoedjes"
+      - id: 4
+        naam: "Passen en trappen"
+        duur_minuten: 15
+        intensiteit: "gemiddeld"
+        materiaal:
+          - "ballen"
+          - "pylonen"
+      - id: 5
+        naam: "Voorstoppen en stoppend verwerken"
+        duur_minuten: 10
+        intensiteit: "laag"
+        materiaal:
+          - "ballen"
+      - id: 6
+        naam: "Conditie, lenigheid en houding (loopscholing)"
+        duur_minuten: 15
+        intensiteit: "hoog"
+        materiaal:
+          - "loopladder"
+          - "hordetjes"
+
+  kern_activiteiten:
+    titel: "B Kern Activiteiten"
+    onderdelen:
+      - id: 1
+        naam: "Combinatievormen"
+        duur_minuten: 15
+        intensiteit: "gemiddeld"
+        materiaal:
+          - "ballen"
+          - "pylonen"
+          - "muren / rebounders"
+      - id: 2
+        naam: "Positiespelen klein"
+        duur_minuten: 15
+        intensiteit: "hoog"
+        materiaal:
+          - "ballen"
+          - "pylonen"
+          - "hijsen / lintjes"
+      - id: 3
+        naam: "Positiespelen groot"
+        duur_minuten: 20
+        intensiteit: "hoog"
+        materiaal:
+          - "ballen"
+          - "pylonen"
+          - "hijsen / lintjes"
+      - id: 4
+        naam: "Duel 1:1, 2:1 en 2:2"
+        duur_minuten: 15
+        intensiteit: "hoog"
+        materiaal:
+          - "ballen"
+          - "pylonen"
+          - "kleine doeltjes"
+      - id: 5
+        naam: "Afwerkvormen"
+        duur_minuten: 15
+        intensiteit: "gemiddeld"
+        materiaal:
+          - "ballen"
+          - "pylonen"
+          - "grote doelen"
+      - id: 6
+        naam: "Aanval tegen verdediging"
+        duur_minuten: 20
+        intensiteit: "hoog"
+        materiaal:
+          - "ballen"
+          - "pylonen"
+          - "hijsen / lintjes"
+          - "grote doelen"
+      - id: 7
+        naam: "Partij klein"
+        duur_minuten: 15
+        intensiteit: "hoog"
+        materiaal:
+          - "ballen"
+          - "kleine doeltjes"
+          - "hijsen / lintjes"
+
+  slot_training:
+    titel: "C Slot Training"
+    onderdelen:
+      - id: 1
+        naam: "Partij Groot"
+        duur_minuten: 20
+        intensiteit: "hoog"
+        materiaal:
+          - "ballen"
+          - "grote doelen"
+          - "hijsen / lintjes"

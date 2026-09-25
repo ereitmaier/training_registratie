@@ -14,10 +14,6 @@ venv/
 ENV/
 env/
 
-# Data files
-*.tsv
-*.yaml
-
 # Images 
 *.png
 
