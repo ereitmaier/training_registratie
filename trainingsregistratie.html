@@ -73,11 +73,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .form-group:last-child {
-            margin-bottom: 0;
         }
 
         label {
@@ -85,7 +80,7 @@
             font-size: 0.9rem;
         }
 
-        input[type="date"], select {
+        input[type="date"] {
             padding: 6px 10px;
             border-radius: 6px;
             border: 1px solid var(--border);
@@ -93,7 +88,7 @@
             background: #f8fafc;
         }
 
-        /* Toggle & Actions Buttons */
+        /* Actions Buttons */
         .actions-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -341,22 +336,15 @@
 
     <header>
         <h1>⚽ Trainings Registratie</h1>
-        <div class="version-tag">Versie v1.3.0 (2026-09-25)</div>
+        <div class="version-tag">Versie v1.4.0 (2026-09-25)</div>
     </header>
 
     <div class="container">
-        <!-- Instellingen & Datum -->
+        <!-- Datum Selectie -->
         <div class="panel">
             <div class="form-group">
                 <label for="training-date">Datum Training:</label>
                 <input type="date" id="training-date">
-            </div>
-            <div class="form-group">
-                <label for="save-format">Opslag Formaat:</label>
-                <select id="save-format">
-                    <option value="json">JSON (.json)</option>
-                    <option value="yaml">YAML (.yaml)</option>
-                </select>
             </div>
         </div>
 
@@ -392,92 +380,6 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        // Embed YAML Data
-        const rawYamlData = `
-training_onderdelen:
-  basisvaardigheden:
-    titel: "A Basisvaardigheden"
-    onderdelen:
-      - id: 1
-        naam: "Dribbelen en drijven"
-        duur_minuten: 10
-        intensiteit: "laag"
-        materiaal: ["pylonen", "ballen"]
-      - id: 2
-        naam: "Kappen en draaien"
-        duur_minuten: 10
-        intensiteit: "gemiddeld"
-        materiaal: ["pylonen", "ballen"]
-      - id: 3
-        naam: "Aan- en meenemen"
-        duur_minuten: 10
-        intensiteit: "gemiddeld"
-        materiaal: ["ballen", "hoedjes"]
-      - id: 4
-        naam: "Passen en trappen"
-        duur_minuten: 15
-        intensiteit: "gemiddeld"
-        materiaal: ["ballen", "pylonen"]
-      - id: 5
-        naam: "Voorstoppen en stoppend verwerken"
-        duur_minuten: 10
-        intensiteit: "laag"
-        materiaal: ["ballen"]
-      - id: 6
-        naam: "Conditie, lenigheid en houding (loopscholing)"
-        duur_minuten: 15
-        intensiteit: "hoog"
-        materiaal: ["loopladder", "hordetjes"]
-
-  kern_activiteiten:
-    titel: "B Kern Activiteiten"
-    onderdelen:
-      - id: 1
-        naam: "Combinatievormen"
-        duur_minuten: 15
-        intensiteit: "gemiddeld"
-        materiaal: ["ballen", "pylonen", "muren / rebounders"]
-      - id: 2
-        naam: "Positiespelen klein"
-        duur_minuten: 15
-        intensiteit: "hoog"
-        materiaal: ["ballen", "pylonen", "hijsen / lintjes"]
-      - id: 3
-        naam: "Positiespelen groot"
-        duur_minuten: 20
-        intensiteit: "hoog"
-        materiaal: ["ballen", "pylonen", "hijsen / lintjes"]
-      - id: 4
-        naam: "Duel 1:1, 2:1 en 2:2"
-        duur_minuten: 15
-        intensiteit: "hoog"
-        materiaal: ["ballen", "pylonen", "kleine doeltjes"]
-      - id: 5
-        naam: "Afwerkvormen"
-        duur_minuten: 15
-        intensiteit: "gemiddeld"
-        materiaal: ["ballen", "pylonen", "grote doelen"]
-      - id: 6
-        naam: "Aanval tegen verdediging"
-        duur_minuten: 20
-        intensiteit: "hoog"
-        materiaal: ["ballen", "pylonen", "hijsen / lintjes", "grote doelen"]
-      - id: 7
-        naam: "Partij klein"
-        duur_minuten: 15
-        intensiteit: "hoog"
-        materiaal: ["ballen", "kleine doeltjes", "hijsen / lintjes"]
-
-  slot_training:
-    titel: "C Slot Training"
-    onderdelen:
-      - id: 1
-        naam: "Partij Groot"
-        duur_minuten: 20
-        intensiteit: "hoog"
-        materiaal: ["ballen", "grote doelen", "hijsen / lintjes"]
-        `;
-
         // State Management
         let appData = {};
         let selectedItems = new Set();
@@ -486,11 +388,10 @@ training_onderdelen:
         // Initialize App
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('training-date').valueAsDate = new Date();
-            parseAndRenderData();
+            loadDataAndRender();
         });
 
-        // Simple Inline YAML Parser (Tailored for this template)
-        function parseAndRenderData() {
+        function loadDataAndRender() {
             appData = {
                 basisvaardigheden: {
                     titel: "A. Basisvaardigheden",
@@ -530,24 +431,25 @@ training_onderdelen:
             const container = document.getElementById('sections-container');
             container.innerHTML = '';
 
-            Object.keys(appData).forEach((key, idx) => {
+            Object.keys(appData).forEach((key) => {
                 const section = appData[key];
                 const sectionCard = document.createElement('div');
                 sectionCard.className = 'section-card';
 
+                // Alle secties worden aangemaakt zonder de 'active' en 'open' classes -> alles ingeklapt
                 const sectionHeader = document.createElement('div');
-                sectionHeader.className = `section-header ${idx === 0 ? 'active' : ''}`;
+                sectionHeader.className = 'section-header';
                 sectionHeader.onclick = () => toggleSection(key);
                 sectionHeader.innerHTML = `
                     <div class="section-title">
                         ${section.titel}
                         <span class="section-badge" id="badge-${key}">0 gekozen</span>
                     </div>
-                    <span class="chevron ${idx === 0 ? 'open' : ''}" id="chevron-${key}">▼</span>
+                    <span class="chevron" id="chevron-${key}">▼</span>
                 `;
 
                 const sectionContent = document.createElement('div');
-                sectionContent.className = `section-content ${idx === 0 ? 'open' : ''}`;
+                sectionContent.className = 'section-content';
                 sectionContent.id = `content-${key}`;
 
                 section.onderdelen.forEach(item => {
@@ -652,7 +554,6 @@ training_onderdelen:
                 if (badge) badge.textContent = `${count} gekozen`;
             });
 
-            // Update Material Chips
             const materialsContainer = document.getElementById('materials-list');
             materialsContainer.innerHTML = '';
 
@@ -697,13 +598,12 @@ training_onderdelen:
                 aantal_oefeningen: executedItems.length,
                 onderdelen: executedItems,
                 gebruikte_materialen: Array.from(materials),
-                versie: "v1.3.0"
+                versie: "v1.4.0"
             };
         }
 
         async function saveToServer() {
             const payload = getExportPayload();
-            const format = document.getElementById('save-format').value;
 
             if (payload.aantal_oefeningen === 0) {
                 showToast("Selecteer minstens één oefening!");
@@ -715,7 +615,7 @@ training_onderdelen:
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        format: format,
+                        format: 'json',
                         data: payload
                     })
                 });
