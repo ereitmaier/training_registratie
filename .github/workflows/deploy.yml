@@ -1,0 +1,22 @@
+on: [push]
+
+jobs:
+  deploy_job:
+    runs-on: ubuntu-latest
+    name: Deploy with Password
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Deploy with Password
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+        with:
+          username: ${{ secrets.SFTP_USERNAME }}
+          server: ${{ secrets.SFTP_SERVER }}
+          port: 22 
+          local_path: './*'
+          remote_path: '/'
+          sftp_only: true
+          password: ${{ secrets.SFTP_PASSWORD }}
+          ignore: |
+            README.md
