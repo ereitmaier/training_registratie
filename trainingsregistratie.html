@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Voetbal Training Registratie</title>
+  <title>Voetbal Training Registratie v1.2.0</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script>
@@ -31,9 +31,8 @@
     .touch-action-manipulation { touch-action: manipulation; }
   </style>
 </head>
-<body class="h-full flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white pb-32">
+<body class="h-full flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white pb-36">
 
-  <!-- Sticky Header -->
   <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800 shadow-md">
     <div class="max-w-md mx-auto px-4 py-3">
       <div class="flex justify-between items-center mb-3">
@@ -44,21 +43,36 @@
           <div>
             <h1 class="text-base font-bold leading-tight text-white flex items-center gap-1.5">
               <span>Trainingsregistratie</span>
+              <span class="text-[10px] bg-brand-500/20 text-brand-300 font-extrabold px-1.5 py-0.5 rounded border border-brand-500/30">v1.2.0</span>
             </h1>
-            <p class="text-xs text-slate-400">Log wat je vandaag hebt gedaan</p>
+            <p class="text-[11px] text-slate-400">Log wat je vandaag hebt gedaan</p>
           </div>
         </div>
 
-        <!-- Date Selector & History Button -->
-        <div class="flex items-center space-x-2">
+        <!-- Action controls & Settings button -->
+        <div class="flex items-center space-x-1.5">
+          <button onclick="toggleSettingsModal(true)" class="p-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 rounded-xl border border-slate-700 transition" title="Instellingen & Info">
+            <i class="fa-solid fa-gear text-sm"></i>
+          </button>
           <button onclick="toggleHistoryModal(true)" class="p-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 rounded-xl border border-slate-700 transition" title="Historie">
             <i class="fa-solid fa-clock-rotate-left text-sm"></i>
           </button>
-          <div class="relative bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-1 flex items-center space-x-1.5">
-            <i class="fa-regular fa-calendar text-brand-400 text-xs"></i>
-            <input type="date" id="training-date" onchange="onDateChange()" class="bg-transparent text-xs font-semibold text-slate-200 focus:outline-none cursor-pointer">
-          </div>
         </div>
+      </div>
+
+      <!-- Date Input & Format Bar -->
+      <div class="flex items-center justify-between gap-2 bg-slate-950/60 p-2 rounded-xl border border-slate-800 mb-2">
+        <div class="flex items-center space-x-2 flex-1">
+          <i class="fa-regular fa-calendar text-brand-400 text-xs pl-1"></i>
+          <span class="text-xs text-slate-400 font-medium">Datum:</span>
+          <input type="date" id="training-date" onchange="onDateChange()" class="bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-100 rounded-lg px-2 py-1 focus:outline-none focus:border-brand-500">
+        </div>
+        
+        <!-- Save format indicator -->
+        <button onclick="toggleSettingsModal(true)" class="flex items-center space-x-1 px-2 py-1 bg-slate-900 rounded-lg border border-slate-700 text-[10px] font-bold uppercase tracking-wider text-slate-300 hover:border-slate-600">
+          <i class="fa-solid fa-file-code text-brand-400"></i>
+          <span id="current-format-badge">JSON</span>
+        </button>
       </div>
 
       <!-- Quick Category Navigation Tabs -->
@@ -79,7 +93,6 @@
     </div>
   </header>
 
-  <!-- Main Content Container -->
   <main class="flex-1 max-w-md w-full mx-auto p-4 space-y-5">
 
     <!-- Active Registration Header Info & Quick Reset -->
@@ -94,12 +107,12 @@
       </button>
     </div>
 
-    <!-- Oefeningen Lijst Container -->
+    <!-- Exercises List Dynamic Container -->
     <div id="exercises-container" class="space-y-6">
-      <!-- Inhoud wordt geladen via JS -->
+      <!-- Content populated dynamically via JS -->
     </div>
 
-    <!-- Dagrapportage & Samenvatting Card -->
+    <!-- Summary & Material Pickup Card -->
     <section class="bg-slate-900 rounded-2xl p-4 border border-slate-800 space-y-4 shadow-lg">
       <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
         <h2 class="text-sm font-bold text-white flex items-center space-x-2">
@@ -111,7 +124,7 @@
         </span>
       </div>
 
-      <!-- Materialen om Op te Ruimen -->
+      <!-- Materials Needed for Clean-up -->
       <div class="space-y-1.5">
         <span class="text-xs font-semibold text-slate-400 flex items-center space-x-1.5">
           <i class="fa-solid fa-boxes-packing text-amber-400 text-[11px]"></i>
@@ -122,7 +135,7 @@
         </div>
       </div>
 
-      <!-- Intensiteit verdeling -->
+      <!-- Intensity Split -->
       <div class="space-y-1.5">
         <span class="text-xs font-semibold text-slate-400 flex items-center space-x-1.5">
           <i class="fa-solid fa-fire text-rose-400 text-[11px]"></i>
@@ -144,42 +157,101 @@
         </div>
       </div>
 
-      <!-- Acties: Opslaan & Delen -->
-      <div class="pt-2 flex gap-2">
-        <button onclick="saveCurrentTraining()" class="flex-1 bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white font-semibold text-xs py-2.5 px-3 rounded-xl shadow-lg shadow-brand-600/20 flex items-center justify-center space-x-2 transition">
-          <i class="fa-solid fa-floppy-disk"></i>
-          <span>Opslaan in Historie</span>
-        </button>
-        <button onclick="copySummaryText()" class="flex-1 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 font-semibold text-xs py-2.5 px-3 rounded-xl border border-slate-700 flex items-center justify-center space-x-2 transition">
+      <!-- Share Action -->
+      <div class="pt-2">
+        <button onclick="copySummaryText()" class="w-full bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 font-semibold text-xs py-2.5 px-3 rounded-xl border border-slate-700 flex items-center justify-center space-x-2 transition">
           <i class="fa-solid fa-copy text-slate-400"></i>
-          <span id="copy-btn-text">Kopieer Samenvatting</span>
+          <span id="copy-btn-text">Kopieer voor WhatsApp / Notities</span>
         </button>
       </div>
     </section>
 
+    <!-- App Version Footer Info -->
+    <footer class="text-center py-4 text-xs text-slate-500 border-t border-slate-800/60 space-y-1">
+      <p class="font-medium text-slate-400">Voetbal Training Registratie App</p>
+      <p class="text-[11px] text-slate-500">Versie: <span class="text-brand-400 font-semibold">v1.2.0</span> | Releasedatum: <span class="text-slate-400">25 september 2026</span></p>
+      <p class="text-[10px] text-slate-600">Slaat op in <code class="bg-slate-900 px-1 py-0.5 rounded text-slate-400">/trainingen/{datum}.{json|yaml}</code></p>
+    </footer>
+
   </main>
 
-  <!-- Bottom Sticky Action Bar -->
-  <div class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 p-3 z-20">
-    <div class="max-w-md mx-auto flex items-center justify-between">
+  <div class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 p-3 z-20 shadow-2xl">
+    <div class="max-w-md mx-auto flex items-center justify-between gap-3">
       <div class="flex flex-col">
-        <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Geregistreerde Tijd</span>
-        <span id="sticky-time" class="text-lg font-extrabold text-brand-400">0 minuten</span>
+        <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Totaal Tijd</span>
+        <span id="sticky-time" class="text-lg font-extrabold text-brand-400">0 min</span>
       </div>
-      <button onclick="saveCurrentTraining()" class="bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-lg shadow-brand-600/20 flex items-center space-x-2 transition">
-        <i class="fa-solid fa-check-double"></i>
-        <span>Sla Registratie Op</span>
+      <button onclick="saveTrainingToServer()" id="server-save-btn" class="flex-1 bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white font-bold text-xs py-3 px-4 rounded-xl shadow-lg shadow-brand-600/20 flex items-center justify-center space-x-2 transition">
+        <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
+        <span>💾 Opslaan op Server</span>
       </button>
     </div>
   </div>
 
-  <!-- History Modal Overlay -->
+  <div id="settings-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden p-0 sm:p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+        <h3 class="font-bold text-slate-100 flex items-center space-x-2">
+          <i class="fa-solid fa-gear text-brand-400"></i>
+          <span>Instellingen & App Info</span>
+        </h3>
+        <button onclick="toggleSettingsModal(false)" class="p-1 text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-5">
+        <!-- Save Format Toggle -->
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+          <label class="text-xs font-bold text-slate-200 block">Server Opslag Formaat</label>
+          <p class="text-[11px] text-slate-400">Kies welk formaat gebruikt moet worden bij opslaan in de map <code class="text-brand-400">/trainingen/</code>:</p>
+          
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="setSaveFormat('json')" id="format-btn-json" class="py-2 px-3 rounded-lg text-xs font-bold border flex items-center justify-center space-x-2 transition bg-brand-600 text-white border-brand-500">
+              <i class="fa-solid fa-code"></i>
+              <span>JSON (.json)</span>
+            </button>
+            <button onclick="setSaveFormat('yaml')" id="format-btn-yaml" class="py-2 px-3 rounded-lg text-xs font-bold border flex items-center justify-center space-x-2 transition bg-slate-900 text-slate-400 border-slate-800">
+              <i class="fa-solid fa-file-lines"></i>
+              <span>YAML (.yaml)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- App Details Card -->
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2 text-xs">
+          <span class="font-bold text-slate-200 block border-b border-slate-800 pb-1">Applicatie Details</span>
+          <div class="flex justify-between text-slate-400">
+            <span>App Versie:</span>
+            <span class="font-bold text-brand-400">v1.2.0</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Releasedatum:</span>
+            <span class="text-slate-200">25 september 2026</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Backend API:</span>
+            <span class="text-slate-200">save_training.php</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Opslagmap:</span>
+            <span class="text-slate-200">/trainingen/</span>
+          </div>
+        </div>
+
+        <button onclick="toggleSettingsModal(false)" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs py-2.5 rounded-xl border border-slate-700 transition">
+          Sluiten
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="history-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden p-0 sm:p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
       <div class="p-4 border-b border-slate-800 flex justify-between items-center">
         <h3 class="font-bold text-slate-100 flex items-center space-x-2">
           <i class="fa-solid fa-clock-rotate-left text-brand-400"></i>
-          <span>Opslagen & Historie</span>
+          <span>Lokale Opslagen & Historie</span>
         </h3>
         <button onclick="toggleHistoryModal(false)" class="p-1 text-slate-400 hover:text-white">
           <i class="fa-solid fa-xmark text-lg"></i>
@@ -193,11 +265,15 @@
   </div>
 
   <script>
-    // YAML data mapping
+    // App Version Metadata
+    const APP_VERSION = "v1.2.0";
+    const APP_RELEASE_DATE = "2026-09-25";
+
+    // YAML template structure parsed into JS Object
     const trainingData = {
       "training_onderdelen": {
         "basisvaardigheden": {
-          "titel": "1. Basisvaardigheden",
+          "titel": "A Basisvaardigheden",
           "onderdelen": [
             { "id": 1, "naam": "Dribbelen en drijven", "duur_minuten": 10, "intensiteit": "laag", "materiaal": ["pylonen", "ballen"] },
             { "id": 2, "naam": "Kappen en draaien", "duur_minuten": 10, "intensiteit": "gemiddeld", "materiaal": ["pylonen", "ballen"] },
@@ -208,7 +284,7 @@
           ]
         },
         "kern_activiteiten": {
-          "titel": "2. Kern Activiteiten",
+          "titel": "B Kern Activiteiten",
           "onderdelen": [
             { "id": 1, "naam": "Combinatievormen", "duur_minuten": 15, "intensiteit": "gemiddeld", "materiaal": ["ballen", "pylonen", "muren / rebounders"] },
             { "id": 2, "naam": "Positiespelen klein", "duur_minuten": 15, "intensiteit": "hoog", "materiaal": ["ballen", "pylonen", "hijsen / lintjes"] },
@@ -220,7 +296,7 @@
           ]
         },
         "slot_training": {
-          "titel": "3. Slot Training",
+          "titel": "C Slot Training",
           "onderdelen": [
             { "id": 1, "naam": "Partij Groot", "duur_minuten": 20, "intensiteit": "hoog", "materiaal": ["ballen", "grote doelen", "hijsen / lintjes"] }
           ]
@@ -228,12 +304,13 @@
       }
     };
 
-    // Application state
+    // State Variables
     let selectedDate = new Date().toISOString().split('T')[0];
     let selectedExercises = new Set();
     let currentCategory = 'all';
+    let saveFormat = localStorage.getItem('vtr_save_format') || 'json';
 
-    // Material Icon helper map
+    // Material Icons map
     const materialIcons = {
       'ballen': 'fa-regular fa-futbol',
       'pylonen': 'fa-solid fa-triangle-exclamation',
@@ -246,11 +323,31 @@
       'grote doelen': 'fa-solid fa-table-cells'
     };
 
+    // Initialize application on load
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('training-date').value = selectedDate;
+      setSaveFormat(saveFormat, false);
       loadSavedRegistrationForDate(selectedDate);
       renderExercises();
     });
+
+    function setSaveFormat(format, updateUIOnly = true) {
+      saveFormat = format;
+      localStorage.setItem('vtr_save_format', format);
+
+      document.getElementById('current-format-badge').innerText = format.toUpperCase();
+
+      const btnJson = document.getElementById('format-btn-json');
+      const btnYaml = document.getElementById('format-btn-yaml');
+
+      if (format === 'json') {
+        btnJson.className = "py-2 px-3 rounded-lg text-xs font-bold border flex items-center justify-center space-x-2 transition bg-brand-600 text-white border-brand-500";
+        btnYaml.className = "py-2 px-3 rounded-lg text-xs font-bold border flex items-center justify-center space-x-2 transition bg-slate-900 text-slate-400 border-slate-800";
+      } else {
+        btnYaml.className = "py-2 px-3 rounded-lg text-xs font-bold border flex items-center justify-center space-x-2 transition bg-brand-600 text-white border-brand-500";
+        btnJson.className = "py-2 px-3 rounded-lg text-xs font-bold border flex items-center justify-center space-x-2 transition bg-slate-900 text-slate-400 border-slate-800";
+      }
+    }
 
     function onDateChange() {
       const inputVal = document.getElementById('training-date').value;
@@ -300,7 +397,7 @@
         const secWrapper = document.createElement('section');
         secWrapper.className = 'space-y-3';
 
-        // Section Title
+        // Section Title Header
         secWrapper.innerHTML = `
           <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between border-b border-slate-800 pb-1.5">
             <span class="flex items-center space-x-2">
@@ -344,7 +441,7 @@
 
           card.innerHTML = `
             <div class="flex items-start space-x-3">
-              <!-- Checkbox button -->
+              <!-- Checkbox -->
               <div class="mt-0.5 flex-shrink-0">
                 <div class="w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
                   isSelected 
@@ -415,14 +512,14 @@
         });
       });
 
-      // Update Top Counter
+      // Update Selection Counter
       document.getElementById('selection-counter').innerText = `${selectedExercises.size} van de ${totalItems} onderdelen gedaan`;
 
       // Update Summary Cards
       document.getElementById('summary-total-time').innerText = `${totalTime} minuten totaal`;
       document.getElementById('sticky-time').innerText = `${totalTime} min`;
 
-      // Update Materials
+      // Update Materials Pickup List
       const matContainer = document.getElementById('materials-summary');
       if (materialsSet.size === 0) {
         matContainer.innerHTML = `<span class="text-xs text-slate-500 italic">Nog geen onderdelen geselecteerd</span>`;
@@ -438,13 +535,47 @@
         }).join('');
       }
 
-      // Update Intensities
+      // Update Intensity
       document.getElementById('int-low-time').innerText = `${intensityTime.laag}m`;
       document.getElementById('int-med-time').innerText = `${intensityTime.gemiddeld}m`;
       document.getElementById('int-high-time').innerText = `${intensityTime.hoog}m`;
     }
 
-    // Storage logic
+    // Helper to construct complete JSON payload for export/server
+    function generateExportPayload() {
+      const registeredItems = [];
+      const materialsSet = new Set();
+      let totalTime = 0;
+
+      const sections = trainingData.training_onderdelen;
+      Object.keys(sections).forEach(secKey => {
+        sections[secKey].onderdelen.forEach(item => {
+          const itemKey = `${secKey}-${item.id}`;
+          if (selectedExercises.has(itemKey)) {
+            totalTime += item.duur_minuten;
+            item.materiaal.forEach(m => materialsSet.add(m));
+            registeredItems.push({
+              sectie: secKey,
+              id: item.id,
+              naam: item.naam,
+              duur_minuten: item.duur_minuten,
+              intensiteit: item.intensiteit
+            });
+          }
+        });
+      });
+
+      return {
+        app_versie: APP_VERSION,
+        datum: selectedDate,
+        totaal_duur_minuten: totalTime,
+        aantal_oefeningen: registeredItems.length,
+        onderdelen: registeredItems,
+        gebruikte_materialen: Array.from(materialsSet)
+      };
+    }
+
+    // Local Storage logic
     function autoSaveCurrentState() {
       const data = {
         date: selectedDate,
@@ -468,19 +599,54 @@
       }
     }
 
-    function saveCurrentTraining() {
-      autoSaveCurrentState();
-      
-      // Save index of dates
-      let historyDates = JSON.parse(localStorage.getItem('vtr_history_dates') || '[]');
-      if (!historyDates.includes(selectedDate)) {
-        historyDates.push(selectedDate);
-        historyDates.sort().reverse();
-        localStorage.setItem('vtr_history_dates', JSON.stringify(historyDates));
+    async function saveTrainingToServer() {
+      if (selectedExercises.size === 0) {
+        alert("Selecteer eerst ten minste één onderdeel voordat je opslaat.");
+        return;
       }
 
-      // Visual feedback
-      alert(`Registratie van ${selectedDate} succesvol opgeslagen!`);
+      const saveBtn = document.getElementById('server-save-btn');
+      const originalBtnText = saveBtn.innerHTML;
+
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-sm"></i> <span>Opslaan op Server...</span>`;
+
+      const payloadData = generateExportPayload();
+
+      try {
+        const response = await fetch('save_training.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            format: saveFormat,
+            data: payloadData
+          })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+          // Update local history list index
+          let historyDates = JSON.parse(localStorage.getItem('vtr_history_dates') || '[]');
+          if (!historyDates.includes(selectedDate)) {
+            historyDates.push(selectedDate);
+            historyDates.sort().reverse();
+            localStorage.setItem('vtr_history_dates', JSON.stringify(historyDates));
+          }
+
+          alert(`✅ Training succesvol opgeslagen op de server!\n\nBestand: ${result.filename}\nFormaat: ${result.format}`);
+        } else {
+          alert(`❌ Server Fout: ${result.message || 'Kon bestand niet opslaan op de server.'}`);
+        }
+      } catch (error) {
+        console.error('Opslaan op server mislukt:', error);
+        alert(`⚠️ Fout bij verbinding met de server (save_training.php).\nControleer of de PHP backend op de server aanwezig is.`);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalBtnText;
+      }
     }
 
     function confirmReset() {
@@ -497,7 +663,7 @@
         return;
       }
 
-      let text = `⚽ *TRAININGSREGISTRATIE - ${selectedDate}*\n`;
+      let text = `⚽ *TRAININGSREGISTRATIE (${APP_VERSION}) - ${selectedDate}*\n`;
       let totalMin = 0;
       let materials = new Set();
 
@@ -517,7 +683,6 @@
       text += `\n⏱ *Totale duur:* ${totalMin} minuten\n`;
       text += `📦 *Materialen opruimen:* ${Array.from(materials).join(', ')}`;
 
-      // Execute copy
       const textarea = document.createElement('textarea');
       textarea.value = text;
       document.body.appendChild(textarea);
@@ -526,11 +691,17 @@
       document.body.removeChild(textarea);
 
       const btnText = document.getElementById('copy-btn-text');
-      btnText.innerText = 'Gekopieerd!';
-      setTimeout(() => btnText.innerText = 'Kopieer Samenvatting', 2000);
+      btnText.innerText = 'Gekopieerd naar klembord!';
+      setTimeout(() => btnText.innerText = 'Kopieer voor WhatsApp / Notities', 2000);
     }
 
-    // Modal History Logic
+    // Modal Helpers
+    function toggleSettingsModal(show) {
+      const modal = document.getElementById('settings-modal');
+      if (show) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    }
+
     function toggleHistoryModal(show) {
       const modal = document.getElementById('history-modal');
       if (show) {
