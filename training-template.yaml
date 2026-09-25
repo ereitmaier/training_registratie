@@ -1,6 +1,6 @@
 ---
+mode: "simpel"
 training_onderdelen:
-  mode: "simpel"
   basisvaardigheden:
     titel: "A Basisvaardigheden"
     onderdelen:
