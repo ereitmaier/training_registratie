@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trainings Registratie</title>
+    <!-- JS-YAML parser library voor het inlezen van .yaml bestanden -->
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <style>
         :root {
             --primary: #10b981;
@@ -244,7 +246,6 @@
         .item-title {
             font-weight: 600;
             font-size: 0.95rem;
-            margin-bottom: 2px;
         }
 
         .item-meta {
@@ -253,6 +254,7 @@
             font-size: 0.75rem;
             color: var(--text-light);
             align-items: center;
+            margin-top: 2px;
         }
 
         .badge-intensity {
@@ -336,7 +338,7 @@
 
     <header>
         <h1>⚽ Trainings Registratie</h1>
-        <div class="version-tag">Versie v1.4.0 (2026-09-25)</div>
+        <div class="version-tag">Versie v1.5.0 (2026-09-25)</div>
     </header>
 
     <div class="container">
@@ -359,10 +361,14 @@
         </div>
 
         <!-- Secties Container -->
-        <div id="sections-container"></div>
+        <div id="sections-container">
+            <div style="text-align: center; padding: 20px; color: var(--text-light);">
+                Sjabloon inladen...
+            </div>
+        </div>
 
         <!-- Materialen Verzamellijst -->
-        <div class="materials-box">
+        <div class="materials-box" id="materials-box">
             <div class="materials-title">📦 Benodigde Materialen (Opruimlijst):</div>
             <div id="materials-list" class="materials-list">
                 <span style="font-size:0.8rem; color:#94a3b8;">Nog geen oefeningen geselecteerd.</span>
@@ -380,51 +386,44 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        // State Management
         let appData = {};
         let selectedItems = new Set();
         let allExpanded = false;
+        let isSimpleMode = false;
 
-        // Initialize App
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('training-date').valueAsDate = new Date();
-            loadDataAndRender();
+            loadYamlTemplate();
         });
 
-        function loadDataAndRender() {
-            appData = {
-                basisvaardigheden: {
-                    titel: "A. Basisvaardigheden",
-                    onderdelen: [
-                        { id: 1, naam: "Dribbelen en drijven", duur_minuten: 10, intensiteit: "laag", materiaal: ["pylonen", "ballen"] },
-                        { id: 2, naam: "Kappen en draaien", duur_minuten: 10, intensiteit: "gemiddeld", materiaal: ["pylonen", "ballen"] },
-                        { id: 3, naam: "Aan- en meenemen", duur_minuten: 10, intensiteit: "gemiddeld", materiaal: ["ballen", "hoedjes"] },
-                        { id: 4, naam: "Passen en trappen", duur_minuten: 15, intensiteit: "gemiddeld", materiaal: ["ballen", "pylonen"] },
-                        { id: 5, naam: "Voorstoppen en stoppend verwerken", duur_minuten: 10, intensiteit: "laag", materiaal: ["ballen"] },
-                        { id: 6, naam: "Conditie, lenigheid en houding", duur_minuten: 15, intensiteit: "hoog", materiaal: ["loopladder", "hordetjes"] }
-                    ]
-                },
-                kern_activiteiten: {
-                    titel: "B. Kern Activiteiten",
-                    onderdelen: [
-                        { id: 1, naam: "Combinatievormen", duur_minuten: 15, intensiteit: "gemiddeld", materiaal: ["ballen", "pylonen", "muren / rebounders"] },
-                        { id: 2, naam: "Positiespelen klein", duur_minuten: 15, intensiteit: "hoog", materiaal: ["ballen", "pylonen", "hijsen / lintjes"] },
-                        { id: 3, naam: "Positiespelen groot", duur_minuten: 20, intensiteit: "hoog", materiaal: ["ballen", "pylonen", "hijsen / lintjes"] },
-                        { id: 4, naam: "Duel 1:1, 2:1 en 2:2", duur_minuten: 15, intensiteit: "hoog", materiaal: ["ballen", "pylonen", "kleine doeltjes"] },
-                        { id: 5, naam: "Afwerkvormen", duur_minuten: 15, intensiteit: "gemiddeld", materiaal: ["ballen", "pylonen", "grote doelen"] },
-                        { id: 6, naam: "Aanval tegen verdediging", duur_minuten: 20, intensiteit: "hoog", materiaal: ["ballen", "pylonen", "hijsen / lintjes", "grote doelen"] },
-                        { id: 7, naam: "Partij klein", duur_minuten: 15, intensiteit: "hoog", materiaal: ["ballen", "kleine doeltjes", "hijsen / lintjes"] }
-                    ]
-                },
-                slot_training: {
-                    titel: "C. Slot Training",
-                    onderdelen: [
-                        { id: 1, naam: "Partij Groot", duur_minuten: 20, intensiteit: "hoog", materiaal: ["ballen", "grote doelen", "hijsen / lintjes"] }
-                    ]
+        // Ophalen van training-template.yaml uit dezelfde directory
+        async function loadYamlTemplate() {
+            try {
+                const response = await fetch('training-template.yaml');
+                if (!response.ok) {
+                    throw new Error(`HTTP fout! Status: ${response.status}`);
                 }
-            };
+                const yamlText = await response.text();
+                const parsed = jsyaml.load(yamlText);
 
-            renderUI();
+                // Controleer of de mode "simpel" is
+                isSimpleMode = (parsed.mode && parsed.mode.toLowerCase() === 'simpel');
+                
+                appData = parsed.training_onderdelen || {};
+
+                // Als simpele modus actief is, verberg de materialen opruimlijst
+                if (isSimpleMode) {
+                    document.getElementById('materials-box').style.display = 'none';
+                }
+
+                renderUI();
+            } catch (err) {
+                console.error("Fout bij laden van YAML:", err);
+                document.getElementById('sections-container').innerHTML = 
+                    `<div style="color:red; text-align:center; padding:20px;">
+                        ⚠️ Kan <strong>training-template.yaml</strong> niet laden uit de directory.
+                     </div>`;
+            }
         }
 
         function renderUI() {
@@ -436,7 +435,6 @@
                 const sectionCard = document.createElement('div');
                 sectionCard.className = 'section-card';
 
-                // Alle secties worden aangemaakt zonder de 'active' en 'open' classes -> alles ingeklapt
                 const sectionHeader = document.createElement('div');
                 sectionHeader.className = 'section-header';
                 sectionHeader.onclick = () => toggleSection(key);
@@ -452,33 +450,59 @@
                 sectionContent.className = 'section-content';
                 sectionContent.id = `content-${key}`;
 
-                section.onderdelen.forEach(item => {
-                    const itemKey = `${key}_${item.id}`;
-                    const isDone = selectedItems.has(itemKey);
+                if (section.onderdelen && Array.isArray(section.onderdelen)) {
+                    section.onderdelen.forEach(item => {
+                        const itemKey = `${key}_${item.id}`;
+                        const isDone = selectedItems.has(itemKey);
 
-                    const itemCard = document.createElement('div');
-                    itemCard.className = `item-card ${isDone ? 'done' : ''}`;
-                    itemCard.id = `card-${itemKey}`;
+                        const itemCard = document.createElement('div');
+                        itemCard.className = `item-card ${isDone ? 'done' : ''}`;
+                        itemCard.id = `card-${itemKey}`;
 
-                    itemCard.innerHTML = `
-                        <div class="item-header" onclick="toggleItem('${key}', ${item.id})">
-                            <div class="checkbox-custom"></div>
-                            <div class="item-info">
-                                <div class="item-title">${item.naam}</div>
-                                <div class="item-meta">
-                                    <span>⏱️ ${item.duur_minuten} min</span>
-                                    <span class="badge-intensity badge-${item.intensiteit}">${item.intensiteit}</span>
+                        // Bepaal of we meta & details tonen op basis van isSimpleMode
+                        let metaHTML = '';
+                        let infoBtnHTML = '';
+                        let detailsHTML = '';
+
+                        if (!isSimpleMode) {
+                            const heeftDuur = item.duur_minuten !== undefined;
+                            const heeftIntensiteit = !!item.intensiteit;
+                            const heeftMateriaal = Array.isArray(item.materiaal) && item.materiaal.length > 0;
+
+                            if (heeftDuur || heeftIntensiteit) {
+                                metaHTML = `
+                                    <div class="item-meta">
+                                        ${heeftDuur ? `<span>⏱️ ${item.duur_minuten} min</span>` : ''}
+                                        ${heeftIntensiteit ? `<span class="badge-intensity badge-${item.intensiteit}">${item.intensiteit}</span>` : ''}
+                                    </div>
+                                `;
+                            }
+
+                            if (heeftMateriaal) {
+                                infoBtnHTML = `<div class="item-toggle-details" onclick="event.stopPropagation(); toggleDetails('${itemKey}')">ℹ️</div>`;
+                                detailsHTML = `
+                                    <div class="item-details" id="details-${itemKey}">
+                                        <strong>Materialen:</strong> ${item.materiaal.join(', ')}
+                                    </div>
+                                `;
+                            }
+                        }
+
+                        itemCard.innerHTML = `
+                            <div class="item-header" onclick="toggleItem('${key}', ${item.id})">
+                                <div class="checkbox-custom"></div>
+                                <div class="item-info">
+                                    <div class="item-title">${item.naam}</div>
+                                    ${metaHTML}
                                 </div>
+                                ${infoBtnHTML}
                             </div>
-                            <div class="item-toggle-details" onclick="event.stopPropagation(); toggleDetails('${itemKey}')">ℹ️</div>
-                        </div>
-                        <div class="item-details" id="details-${itemKey}">
-                            <strong>Materialen:</strong> ${item.materiaal.join(', ')}
-                        </div>
-                    `;
+                            ${detailsHTML}
+                        `;
 
-                    sectionContent.appendChild(itemCard);
-                });
+                        sectionContent.appendChild(itemCard);
+                    });
+                }
 
                 sectionCard.appendChild(sectionHeader);
                 sectionCard.appendChild(sectionContent);
@@ -534,7 +558,7 @@
 
         function toggleDetails(itemKey) {
             const details = document.getElementById(`details-${itemKey}`);
-            details.classList.toggle('open');
+            if (details) details.classList.toggle('open');
         }
 
         function updateSummary() {
@@ -542,30 +566,36 @@
 
             Object.keys(appData).forEach(secKey => {
                 let count = 0;
-                appData[secKey].onderdelen.forEach(item => {
-                    const itemKey = `${secKey}_${item.id}`;
-                    if (selectedItems.has(itemKey)) {
-                        count++;
-                        item.materiaal.forEach(m => materials.add(m));
-                    }
-                });
+                if (appData[secKey].onderdelen) {
+                    appData[secKey].onderdelen.forEach(item => {
+                        const itemKey = `${secKey}_${item.id}`;
+                        if (selectedItems.has(itemKey)) {
+                            count++;
+                            if (Array.isArray(item.materiaal)) {
+                                item.materiaal.forEach(m => materials.add(m));
+                            }
+                        }
+                    });
+                }
 
                 const badge = document.getElementById(`badge-${secKey}`);
                 if (badge) badge.textContent = `${count} gekozen`;
             });
 
-            const materialsContainer = document.getElementById('materials-list');
-            materialsContainer.innerHTML = '';
+            if (!isSimpleMode) {
+                const materialsContainer = document.getElementById('materials-list');
+                materialsContainer.innerHTML = '';
 
-            if (materials.size === 0) {
-                materialsContainer.innerHTML = '<span style="font-size:0.8rem; color:#94a3b8;">Nog geen oefeningen geselecteerd.</span>';
-            } else {
-                materials.forEach(mat => {
-                    const chip = document.createElement('span');
-                    chip.className = 'material-chip';
-                    chip.textContent = mat;
-                    materialsContainer.appendChild(chip);
-                });
+                if (materials.size === 0) {
+                    materialsContainer.innerHTML = '<span style="font-size:0.8rem; color:#94a3b8;">Nog geen oefeningen geselecteerd.</span>';
+                } else {
+                    materials.forEach(mat => {
+                        const chip = document.createElement('span');
+                        chip.className = 'material-chip';
+                        chip.textContent = mat;
+                        materialsContainer.appendChild(chip);
+                    });
+                }
             }
         }
 
@@ -576,30 +606,44 @@
             const materials = new Set();
 
             Object.keys(appData).forEach(secKey => {
-                appData[secKey].onderdelen.forEach(item => {
-                    const itemKey = `${secKey}_${item.id}`;
-                    if (selectedItems.has(itemKey)) {
-                        executedItems.push({
-                            sectie: secKey,
-                            id: item.id,
-                            naam: item.naam,
-                            duur_minuten: item.duur_minuten,
-                            intensiteit: item.intensiteit
-                        });
-                        totalMinutes += item.duur_minuten;
-                        item.materiaal.forEach(m => materials.add(m));
-                    }
-                });
+                if (appData[secKey].onderdelen) {
+                    appData[secKey].onderdelen.forEach(item => {
+                        const itemKey = `${secKey}_${item.id}`;
+                        if (selectedItems.has(itemKey)) {
+                            const record = {
+                                sectie: secKey,
+                                id: item.id,
+                                naam: item.naam
+                            };
+
+                            if (!isSimpleMode) {
+                                record.duur_minuten = item.duur_minuten || 0;
+                                record.intensiteit = item.intensiteit || '';
+                                totalMinutes += record.duur_minuten;
+                                if (Array.isArray(item.materiaal)) {
+                                    item.materiaal.forEach(m => materials.add(m));
+                                }
+                            }
+
+                            executedItems.push(record);
+                        }
+                    });
+                }
             });
 
-            return {
+            const payload = {
                 datum: datum,
-                totaal_duur_minuten: totalMinutes,
                 aantal_oefeningen: executedItems.length,
                 onderdelen: executedItems,
-                gebruikte_materialen: Array.from(materials),
-                versie: "v1.4.0"
+                versie: "v1.5.0"
             };
+
+            if (!isSimpleMode) {
+                payload.totaal_duur_minuten = totalMinutes;
+                payload.gebruikte_materialen = Array.from(materials);
+            }
+
+            return payload;
         }
 
         async function saveToServer() {
@@ -641,13 +685,18 @@
             }
 
             let text = `📋 *Trainingsregistratie (${payload.datum})*\n`;
-            text += `⏱️ Totale duur: ${payload.totaal_duur_minuten} min (${payload.aantal_oefeningen} onderdelen)\n\n`;
-
-            payload.onderdelen.forEach(i => {
-                text += `• ${i.naam} (${i.duur_minuten}m, ${i.intensiteit})\n`;
-            });
-
-            text += `\n📦 *Materialen opruimen:*\n${payload.gebruikte_materialen.join(', ')}`;
+            if (!isSimpleMode) {
+                text += `⏱️ Totale duur: ${payload.totaal_duur_minuten} min (${payload.aantal_oefeningen} onderdelen)\n\n`;
+                payload.onderdelen.forEach(i => {
+                    text += `• ${i.naam} (${i.duur_minuten}m, ${i.intensiteit})\n`;
+                });
+                text += `\n📦 *Materialen opruimen:*\n${payload.gebruikte_materialen.join(', ')}`;
+            } else {
+                text += `Aantal onderdelen gedaan: ${payload.aantal_oefeningen}\n\n`;
+                payload.onderdelen.forEach(i => {
+                    text += `• ${i.naam}\n`;
+                });
+            }
 
             navigator.clipboard.writeText(text).then(() => {
                 showToast("📋 Samenvatting gekopieerd!");
