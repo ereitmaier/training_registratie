@@ -81,7 +81,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            margin-top: 10px;
+            margin-top: 12px;
         }
 
         label {
@@ -100,8 +100,9 @@
 
         textarea {
             resize: vertical;
-            min-height: 70px;
+            min-height: 80px;
             font-family: inherit;
+            line-height: 1.4;
         }
 
         /* Actions Buttons */
@@ -352,11 +353,11 @@
 
     <header>
         <h1>⚽ Trainings Registratie</h1>
-        <div class="version-tag">Versie v1.5.0 (2026-09-25)</div>
+        <div class="version-tag">Versie v1.6.0 (2026-09-26)</div>
     </header>
 
     <div class="container">
-        <!-- Datum Selectie & Notitieveld -->
+        <!-- Datum Selectie & Notities -->
         <div class="panel">
             <div class="form-group">
                 <label for="training-date">Datum Training:</label>
@@ -619,7 +620,10 @@
 
         function getExportPayload() {
             const datum = document.getElementById('training-date').value;
-            const notities = document.getElementById('training-notes').value.trim();
+            // Haal de notitie op en normaliseer eventuele \r\n regeleinden naar standaard \n
+            const rawNotities = document.getElementById('training-notes').value;
+            const notities = rawNotities ? rawNotities.replace(/\r\n/g, '\n').trim() : '';
+
             const executedItems = [];
             let totalMinutes = 0;
             const materials = new Set();
@@ -655,7 +659,7 @@
                 notitie: notities,
                 aantal_oefeningen: executedItems.length,
                 onderdelen: executedItems,
-                versie: "v1.5.0"
+                versie: "v1.6.0"
             };
 
             if (!isSimpleMode) {
@@ -706,7 +710,7 @@
 
             let text = `📋 *Trainingsregistratie (${payload.datum})*\n`;
             if (payload.notitie) {
-                text += `📝 *Notitie:* ${payload.notitie}\n`;
+                text += `📝 *Notities:*\n${payload.notitie}\n\n`;
             }
             if (!isSimpleMode) {
                 text += `⏱️ Totale duur: ${payload.totaal_duur_minuten} min (${payload.aantal_oefeningen} onderdelen)\n\n`;
