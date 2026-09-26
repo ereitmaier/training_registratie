@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trainings Registratie</title>
-    <!-- JS-YAML parser library voor het inlezen van .yaml bestanden -->
+    <!-- JS-YAML parser library voor het inlezen en genereren van .yaml bestanden -->
     <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <style>
         :root {
@@ -353,7 +353,7 @@
 
     <header>
         <h1>⚽ Trainings Registratie</h1>
-        <div class="version-tag">Versie v1.6.0 (2026-09-26)</div>
+        <div class="version-tag">Versie v1.7.0 (2026-09-26)</div>
     </header>
 
     <div class="container">
@@ -620,7 +620,6 @@
 
         function getExportPayload() {
             const datum = document.getElementById('training-date').value;
-            // Haal de notitie op en normaliseer eventuele \r\n regeleinden naar standaard \n
             const rawNotities = document.getElementById('training-notes').value;
             const notities = rawNotities ? rawNotities.replace(/\r\n/g, '\n').trim() : '';
 
@@ -659,7 +658,7 @@
                 notitie: notities,
                 aantal_oefeningen: executedItems.length,
                 onderdelen: executedItems,
-                versie: "v1.6.0"
+                versie: "v1.7.0"
             };
 
             if (!isSimpleMode) {
@@ -678,14 +677,14 @@
                 return;
             }
 
+            // Zet de JavaScript-payload om naar een geformatteerde YAML-string
+            const yamlString = jsyaml.dump(payload, { lineWidth: -1 });
+
             try {
                 const response = await fetch('save_training.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        format: 'json',
-                        data: payload
-                    })
+                    headers: { 'Content-Type': 'application/x-yaml' },
+                    body: yamlString
                 });
 
                 const result = await response.json();
