@@ -77,17 +77,31 @@
             align-items: center;
         }
 
+        .form-group-column {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
         label {
             font-weight: 600;
             font-size: 0.9rem;
         }
 
-        input[type="date"] {
-            padding: 6px 10px;
+        input[type="date"], textarea {
+            padding: 8px 10px;
             border-radius: 6px;
             border: 1px solid var(--border);
             font-size: 0.9rem;
             background: #f8fafc;
+            width: 100%;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 70px;
+            font-family: inherit;
         }
 
         /* Actions Buttons */
@@ -342,11 +356,15 @@
     </header>
 
     <div class="container">
-        <!-- Datum Selectie -->
+        <!-- Datum Selectie & Notitieveld -->
         <div class="panel">
             <div class="form-group">
                 <label for="training-date">Datum Training:</label>
                 <input type="date" id="training-date">
+            </div>
+            <div class="form-group-column">
+                <label for="training-notes">Notities / Opmerkingen:</label>
+                <textarea id="training-notes" placeholder="Bijv. bijzonderheden, uitvallers of de sfeer van de training..."></textarea>
             </div>
         </div>
 
@@ -601,6 +619,7 @@
 
         function getExportPayload() {
             const datum = document.getElementById('training-date').value;
+            const notities = document.getElementById('training-notes').value.trim();
             const executedItems = [];
             let totalMinutes = 0;
             const materials = new Set();
@@ -633,6 +652,7 @@
 
             const payload = {
                 datum: datum,
+                notitie: notities,
                 aantal_oefeningen: executedItems.length,
                 onderdelen: executedItems,
                 versie: "v1.5.0"
@@ -685,6 +705,9 @@
             }
 
             let text = `📋 *Trainingsregistratie (${payload.datum})*\n`;
+            if (payload.notitie) {
+                text += `📝 *Notitie:* ${payload.notitie}\n`;
+            }
             if (!isSimpleMode) {
                 text += `⏱️ Totale duur: ${payload.totaal_duur_minuten} min (${payload.aantal_oefeningen} onderdelen)\n\n`;
                 payload.onderdelen.forEach(i => {
