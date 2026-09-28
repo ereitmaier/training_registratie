@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trainings Registratie</title>
-    <!-- JS-YAML parser library voor het inlezen van .yaml sjablonen -->
+    <!-- JS-YAML parser library -->
     <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <style>
         :root {
@@ -60,6 +60,46 @@
             max-width: 600px;
             margin: 0 auto;
             padding: 12px;
+        }
+
+        /* Screen Management */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* Auth & Selection Cards */
+        .auth-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .auth-card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            text-align: center;
+            color: #1e293b;
+        }
+
+        .form-field {
+            margin-bottom: 14px;
+        }
+
+        .form-field label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .form-field input, .form-field select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #f8fafc;
+            font-size: 0.95rem;
         }
 
         /* Controls Panel */
@@ -127,21 +167,13 @@
             justify-content: center;
             gap: 6px;
             transition: background 0.2s;
+            width: 100%;
         }
 
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn-secondary {
-            background-color: #475569;
-        }
-
-        .btn-outline {
-            background-color: transparent;
-            color: var(--text);
-            border: 1px solid #cbd5e1;
-        }
+        .btn:active { transform: scale(0.98); }
+        .btn-secondary { background-color: #475569; }
+        .btn-outline { background-color: transparent; color: var(--text); border: 1px solid #cbd5e1; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* Section Accordion */
         .section-card {
@@ -190,18 +222,9 @@
             color: var(--text-light);
         }
 
-        .chevron.open {
-            transform: rotate(180deg);
-        }
-
-        .section-content {
-            display: none;
-            padding: 8px 12px;
-        }
-
-        .section-content.open {
-            display: block;
-        }
+        .chevron.open { transform: rotate(180deg); }
+        .section-content { display: none; padding: 8px 12px; }
+        .section-content.open { display: block; }
 
         /* Exercise Items */
         .item-card {
@@ -250,18 +273,9 @@
             display: none;
         }
 
-        .item-card.done .checkbox-custom::after {
-            display: block;
-        }
-
-        .item-info {
-            flex: 1;
-        }
-
-        .item-title {
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
+        .item-card.done .checkbox-custom::after { display: block; }
+        .item-info { flex: 1; }
+        .item-title { font-weight: 600; font-size: 0.95rem; }
 
         .item-meta {
             display: flex;
@@ -298,8 +312,19 @@
             color: #475569;
         }
 
-        .item-details.open {
-            display: block;
+        .item-details.open { display: block; }
+
+        /* Context Subheader */
+        .context-bar {
+            background: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
         }
 
         /* Material List Box */
@@ -318,11 +343,7 @@
             color: #334155;
         }
 
-        .materials-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
+        .materials-list { display: flex; flex-wrap: wrap; gap: 6px; }
 
         .material-chip {
             background: #e2e8f0;
@@ -332,7 +353,6 @@
             color: #334155;
         }
 
-        /* Status Toast */
         .toast {
             position: fixed;
             bottom: 20px;
@@ -353,53 +373,97 @@
 
     <header>
         <h1>⚽ Trainings Registratie</h1>
-        <div class="version-tag">Versie v1.8.0 (2026-09-26)</div>
+        <div class="version-tag">Versie v1.9.0 (2026-09-28)</div>
     </header>
 
     <div class="container">
-        <!-- Datum Selectie & Notities -->
-        <div class="panel">
-            <div class="form-group">
-                <label for="training-date">Datum Training:</label>
-                <input type="date" id="training-date">
-            </div>
-            <div class="form-group-column">
-                <label for="training-notes">Notities / Opmerkingen:</label>
-                <textarea id="training-notes" placeholder="Bijv. bijzonderheden, uitvallers of de sfeer van de training..."></textarea>
-            </div>
-        </div>
 
-        <!-- Snelle Acties -->
-        <div class="actions-grid">
-            <button class="btn btn-secondary" onclick="toggleAllSections()">
-                ↕️ ALLES IN/UITKLAPPEN
-            </button>
-            <button class="btn" onclick="saveToServer()">
-                💾 OPSLAAN OP SERVER
-            </button>
-        </div>
-
-        <!-- Secties Container -->
-        <div id="sections-container">
-            <div style="text-align: center; padding: 20px; color: var(--text-light);">
-                Sjabloon inladen...
+        <!-- STAP 1: LOGIN SCHERM -->
+        <div id="screen-login" class="screen active">
+            <div class="auth-card">
+                <h2>Inloggen</h2>
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-field">
+                        <label for="username">Gebruikersnaam</label>
+                        <input type="text" id="username" required placeholder="bijv. eric@zaandijk.nl">
+                    </div>
+                    <div class="form-field">
+                        <label for="password">Wachtwoord</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    <button type="submit" class="btn">Inloggen</button>
+                </form>
             </div>
         </div>
 
-        <!-- Materialen Verzamellijst -->
-        <div class="materials-box" id="materials-box">
-            <div class="materials-title">📦 Benodigde Materialen (Opruimlijst):</div>
-            <div id="materials-list" class="materials-list">
-                <span style="font-size:0.8rem; color:#94a3b8;">Nog geen oefeningen geselecteerd.</span>
+        <!-- STAP 2: CONTEXT SELECTIE SCHERM (Club & Team) -->
+        <div id="screen-select" class="screen">
+            <div class="auth-card">
+                <h2>Selecteer Reikwijdte</h2>
+                <div class="form-field" id="club-select-group">
+                    <label for="club-select">Vereniging</label>
+                    <select id="club-select" onchange="onClubChange()"></select>
+                </div>
+                <div class="form-field" id="team-select-group">
+                    <label for="team-select">Team</label>
+                    <select id="team-select"></select>
+                </div>
+                <button type="button" class="btn" onclick="confirmContextSelection()">Open Registratie</button>
             </div>
         </div>
 
-        <!-- Extra acties -->
-        <div style="margin-top: 12px;">
-            <button class="btn btn-outline" style="width: 100%;" onclick="copySummary()">
-                📋 Kopieer Samenvatting voor WhatsApp
-            </button>
+        <!-- STAP 3: TRAININGS REGISTRATIE SCHERM -->
+        <div id="screen-app" class="screen">
+            <div class="context-bar">
+                <span id="active-context-label">Zaandijk > VR2</span>
+                <span id="user-role-badge" style="color: #059669; font-size: 0.75rem;">Rol: Trainer</span>
+            </div>
+
+            <!-- Datum Selectie & Notities -->
+            <div class="panel">
+                <div class="form-group">
+                    <label for="training-date">Datum Training:</label>
+                    <input type="date" id="training-date">
+                </div>
+                <div class="form-group-column">
+                    <label for="training-notes">Notities / Opmerkingen:</label>
+                    <textarea id="training-notes" placeholder="Bijv. bijzonderheden, uitvallers of de sfeer van de training..."></textarea>
+                </div>
+            </div>
+
+            <!-- Snelle Acties -->
+            <div class="actions-grid">
+                <button class="btn btn-secondary" onclick="toggleAllSections()">
+                    ↕️ IN/UITKLAPPEN
+                </button>
+                <button class="btn" id="btn-save" onclick="saveToServer()">
+                    💾 OPSLAAN OP SERVER
+                </button>
+            </div>
+
+            <!-- Secties Container -->
+            <div id="sections-container">
+                <div style="text-align: center; padding: 20px; color: var(--text-light);">
+                    Sjabloon inladen...
+                </div>
+            </div>
+
+            <!-- Materialen Verzamellijst -->
+            <div class="materials-box" id="materials-box">
+                <div class="materials-title">📦 Benodigde Materialen (Opruimlijst):</div>
+                <div id="materials-list" class="materials-list">
+                    <span style="font-size:0.8rem; color:#94a3b8;">Nog geen oefeningen geselecteerd.</span>
+                </div>
+            </div>
+
+            <!-- Extra acties -->
+            <div style="margin-top: 12px;">
+                <button class="btn btn-outline" style="width: 100%;" onclick="copySummary()">
+                    📋 Kopieer Samenvatting voor WhatsApp
+                </button>
+            </div>
         </div>
+
     </div>
 
     <div id="toast" class="toast"></div>
@@ -410,27 +474,147 @@
         let allExpanded = false;
         let isSimpleMode = false;
 
+        // Inlog & Context Status
+        let sessionData = null; 
+        let activeClub = null;
+        let activeTeam = null;
+        let activeRole = null;
+
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('training-date').valueAsDate = new Date();
-            loadYamlTemplate();
         });
 
-        // Ophalen van training-template.yaml uit dezelfde directory
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // 1. AFHANDELING LOGIN
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('login.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    sessionData = result.data; // Bevat toegewezen clubs, teams & rollen
+                    evaluateContextNavigation();
+                } else {
+                    showToast(`⚠️ ${result.message || 'Inloggen mislukt'}`);
+                }
+            } catch (err) {
+                // FALLBACK MOCK DATA voor testen zonder backend
+                console.warn("Geen login.php server gevonden, start in testmodus.");
+                sessionData = getMockUserData();
+                evaluateContextNavigation();
+            }
+        }
+
+        // Mock Data voor lokaal testen
+        function getMockUserData() {
+            return {
+                assignments: [
+                    { club_id: 1, club_name: "ZVV Zaandijk", team_id: 101, team_name: "VR2", role: "Trainer" }
+                ]
+            };
+        }
+
+        // 2. CONTEXT NAVIGATIE LOGICA (Skip indien exact 1 optie)
+        function evaluateContextNavigation() {
+            const assignments = sessionData.assignments;
+
+            // Unieke clubs ophalen
+            const clubs = [...new Map(assignments.map(a => [a.club_id, a.club_name])).entries()];
+
+            if (clubs.length === 1) {
+                activeClub = { id: clubs[0][0], name: clubs[0][1] };
+                evaluateTeamSelection();
+            } else {
+                populateClubDropdown(clubs);
+                showScreen('screen-select');
+            }
+        }
+
+        function populateClubDropdown(clubs) {
+            const clubSelect = document.getElementById('club-select');
+            clubSelect.innerHTML = clubs.map(c => `<option value="${c[0]}">${c[1]}</option>`).join('');
+            onClubChange();
+        }
+
+        function onClubChange() {
+            const clubId = parseInt(document.getElementById('club-select').value);
+            const availableTeams = sessionData.assignments
+                .filter(a => a.club_id === clubId && a.team_id)
+                .map(a => ({ id: a.team_id, name: a.team_name, role: a.role }));
+
+            const teamSelect = document.getElementById('team-select');
+            teamSelect.innerHTML = availableTeams.map(t => `<option value="${t.id}" data-role="${t.role}">${t.name}</option>`).join('');
+        }
+
+        function evaluateTeamSelection() {
+            const teams = sessionData.assignments.filter(a => a.club_id === activeClub.id && a.team_id);
+
+            if (teams.length === 1) {
+                activeTeam = { id: teams[0].team_id, name: teams[0].team_name };
+                activeRole = teams[0].role;
+                startApp();
+            } else if (teams.length > 1) {
+                populateClubDropdown([...new Map(sessionData.assignments.map(a => [a.club_id, a.club_name])).entries()]);
+                document.getElementById('club-select').value = activeClub.id;
+                onClubChange();
+                showScreen('screen-select');
+            } else {
+                showToast("⚠️ Geen teams toegewezen onder deze vereniging.");
+            }
+        }
+
+        function confirmContextSelection() {
+            const clubSelect = document.getElementById('club-select');
+            const teamSelect = document.getElementById('team-select');
+
+            activeClub = { id: parseInt(clubSelect.value), name: clubSelect.options[clubSelect.selectedIndex].text };
+            activeTeam = { id: parseInt(teamSelect.value), name: teamSelect.options[teamSelect.selectedIndex].text };
+            
+            const selectedOption = teamSelect.options[teamSelect.selectedIndex];
+            activeRole = selectedOption.getAttribute('data-role') || 'Coach';
+
+            startApp();
+        }
+
+        // 3. APPLICATIE STARTEN
+        function startApp() {
+            document.getElementById('active-context-label').textContent = `${activeClub.name} > ${activeTeam.name}`;
+            document.getElementById('user-role-badge').textContent = `Rol: ${activeRole}`;
+
+            // Indien alleen-lezen (Coach)
+            if (activeRole === 'Coach') {
+                document.getElementById('btn-save').disabled = true;
+                document.getElementById('training-notes').disabled = true;
+            }
+
+            showScreen('screen-app');
+            loadYamlTemplate();
+        }
+
+        // 4. YAML LADEN EN APPLICATIE-LOGICA
         async function loadYamlTemplate() {
             try {
                 const response = await fetch('training-template.yaml');
-                if (!response.ok) {
-                    throw new Error(`HTTP fout! Status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP fout! Status: ${response.status}`);
                 const yamlText = await response.text();
                 const parsed = jsyaml.load(yamlText);
 
-                // Controleer of de mode "simpel" is
                 isSimpleMode = (parsed.mode && parsed.mode.toLowerCase() === 'simpel');
-                
                 appData = parsed.training_onderdelen || {};
 
-                // Als simpele modus actief is, verberg de materialen opruimlijst
                 if (isSimpleMode) {
                     document.getElementById('materials-box').style.display = 'none';
                 }
@@ -478,7 +662,6 @@
                         itemCard.className = `item-card ${isDone ? 'done' : ''}`;
                         itemCard.id = `card-${itemKey}`;
 
-                        // Bepaal of we meta & details tonen op basis van isSimpleMode
                         let metaHTML = '';
                         let infoBtnHTML = '';
                         let detailsHTML = '';
@@ -561,6 +744,8 @@
         }
 
         function toggleItem(sectionKey, id) {
+            if (activeRole === 'Coach') return; // Alleen-lezen voor Coach
+
             const itemKey = `${sectionKey}_${id}`;
             const card = document.getElementById(`card-${itemKey}`);
 
@@ -623,6 +808,10 @@
             const rawNotities = document.getElementById('training-notes').value;
             const notities = rawNotities ? rawNotities.replace(/\r\n/g, '\n').trim() : '';
 
+            // Schoon opmaak van club en team namen voor namespace paden
+            const cleanClub = activeClub.name.replace(/[^a-zA-Z0-9_\-]/g, '_');
+            const cleanTeam = activeTeam.name.replace(/[^a-zA-Z0-9_\-]/g, '_');
+
             const executedItems = [];
             let totalMinutes = 0;
             const materials = new Set();
@@ -654,11 +843,14 @@
             });
 
             const payload = {
+                namespace: `/${cleanClub}/${cleanTeam}/${datum}/`,
+                club: activeClub.name,
+                team: activeTeam.name,
                 datum: datum,
                 notitie: notities,
                 aantal_oefeningen: executedItems.length,
                 onderdelen: executedItems,
-                versie: "v1.8.0"
+                versie: "v1.9.0"
             };
 
             if (!isSimpleMode) {
@@ -670,6 +862,11 @@
         }
 
         async function saveToServer() {
+            if (activeRole === 'Coach') {
+                showToast("⚠️ Geen schrijfrechten (Rol: Coach)");
+                return;
+            }
+
             const payload = getExportPayload();
 
             if (payload.aantal_oefeningen === 0) {
@@ -704,7 +901,7 @@
                 return;
             }
 
-            let text = `📋 *Trainingsregistratie (${payload.datum})*\n`;
+            let text = `📋 *Trainingsregistratie ${payload.team} (${payload.datum})*\n`;
             if (payload.notitie) {
                 text += `📝 *Notities:*\n${payload.notitie}\n\n`;
             }

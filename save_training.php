@@ -1,45 +1,29 @@
 <?php
 header('Content-Type: application/json');
 
-// 1. Lees de binnenkomende JSON uit de request body
-$jsonInput = file_get_contents('php://input');
+$input = file_get_contents('php://input');
+$data = json_decode($input, true);
 
-if (empty($jsonInput)) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Geen data ontvangen.'
-    ]);
+if (!$data || !isset($data['namespace'])) {
+    http_response_code(400);
+    echo json_encode(['status' => 'error', 'message' => 'Ongeldige payload']);
     exit;
 }
 
-// 2. Valideer of het geldige JSON is
-$data = json_decode($jsonInput, true);
+// Bepaal pad op basis van namespace
+$baseDir = __DIR__ . '/data';
+$targetDir = $baseDir . $data['namespace'];
 
-if (!$data) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Ongeldige JSON ontvangen.'
-    ]);
-    exit;
+// Maak de mappenstructuur aan indien deze nog niet bestaat
+if (!is_dir($targetDir)) {
+    mkdir($targetDir, 0777, true);
 }
 
-// 3. Bepaal de bestandsnaam op basis van de datum (bijv. training_2026-09-26.json)
-$datum = !empty($data['datum']) ? $data['datum'] : date('Y-m-d');
-$fileName = 'training_' . $datum . '_' . time() . '.json';
+$filePath = $targetDir . 'training.json';
 
-// 4. Maak de JSON weer mooi geformatteerd om op te slaan (JSON_PRETTY_PRINT zorgt voor leesbare regeleinden)
-$formattedJson = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-// 5. Sla het bestand op
-if (file_put_contents($fileName, $formattedJson) !== false) {
-    echo json_encode([
-        'status' => 'success',
-        'message' => 'Training succesvol opgeslagen als JSON!'
-    ]);
+if (file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT))) {
+    echo json_encode(['status' => 'success', 'message' => 'Opgeslagen in ' . $data['namespace']]);
 } else {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Kon het bestand niet opslaan op de server.'
-    ]);
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Opslaan mislukt']);
 }
-?>
