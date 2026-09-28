@@ -11,63 +11,64 @@ $host     = getenv('DB_HOST') ?: '127.0.0.1';
 $port     = getenv('DB_PORT') ?: '5432';
 $dbname   = getenv('DB_NAME') ?: 'trainings_db';
 $user     = getenv('DB_USER') ?: 'postgres';
-$dbPass   = getenv('DB_PASSWORD');
-
-
-
+$dbPass   = getenv('DB_PASSWORD') ?: '';
 
 try {
     $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-    $pdo = new PDO($dsn, $user,$dbPass, [
+    $pdo = new PDO($dsn, $user, $dbPass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
     ]);
 } catch (PDOException $e) {
-    die("Database verbinding mislukt.");
+    die("Database verbinding mislukt: " . htmlspecialchars($e->getMessage()));
 }
 
 // SIMULATIE / AFHANDELING VAN INGELOGDE BEHEERDER
-// In productie haal je dit uit $_SESSION['user_id'] en$_SESSION['role']
-$currentUserId =$_SESSION['user_id'] ?? 1; // Voorbeeld ID
-$currentUserRole =$_SESSION['user_role'] ?? 'Admin'; // 'Superadmin' of 'Admin'
+$currentUserId   = $_SESSION['user_id'] ?? 1;
+$currentUserRole = $_SESSION['user_role'] ?? 'Admin'; 
 
-// Controleer of de ingelogde gebruiker wel bevoegd is
 if (!in_array($currentUserRole, ['Admin', 'Superadmin'])) {
     http_response_code(403);
     die("Toegang geweigerd: Je hebt onvoldoende rechten.");
 }
 
-$message = '';$messageType = '';
+$message     = '';
+$messageType = '';
 
 // 2. VERWERKING VAN HET FORMULIER (POST)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {$naam     = trim($_POST['naam'] ?? '');$email    = trim($_POST['email'] ?? '');$password = $_POST['password'] ?? '';$clubId   = !empty($_POST['club_id']) ? intval($_POST['club_id']) : null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $naam     = trim($_POST['naam'] ?? '');
+    $email    = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $clubId   = !empty($_POST['club_id']) ? intval($_POST['club_id']) : null;
     $teamId   = !empty($_POST['team_id']) ? intval($_POST['team_id']) : null;
-    $role     =$_POST['role'] ?? '';
+    $role     = $_POST['role'] ?? '';
 
-    // Validatie
-    if (empty($naam) || empty($email) \vert{}\vert{} empty($password) || empty($role)) {$message = "Vul alle verplichte velden in.";
+    if (empty($naam) || empty($email) || empty($password) || empty($role)) {
+        $message     = "Vul alle verplichte velden in.";
         $messageType = "error";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {$message = "Ongeldig e-mailadres.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $message     = "Ongeldig e-mailadres.";
         $messageType = "error";
     } else {
         try {
             $pdo->beginTransaction();
 
-            // A. Voeg gebruiker toe aan `users`
-            $stmtUser =$pdo->prepare("INSERT INTO users (naam, email) VALUES (:naam, :email) RETURNING id");
-            $stmtUser->execute(['naam' => $naam, 'email' =>$email]);
-            $newUserId =$stmtUser->fetchColumn();
+            // A. Voeg gebruiker toe aan users
+            $stmtUser = $pdo->prepare("INSERT INTO users (naam, email) VALUES (:naam, :email) RETURNING id");
+            $stmtUser->execute(['naam' => $naam, 'email' => $email]);
+            $newUserId = $stmtUser->fetchColumn();
 
-            // B. Hash wachtwoord en voeg toe aan `passwords`
+            // B. Hash wachtwoord en voeg toe aan passwords
             $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-            $stmtPass =$pdo->prepare("INSERT INTO passwords (user_id, encrypted_password, is_active) VALUES (:user_id, :password, TRUE)");
+            $stmtPass       = $pdo->prepare("INSERT INTO passwords (user_id, encrypted_password, is_active) VALUES (:user_id, :password, TRUE)");
             $stmtPass->execute([
                 'user_id'  => $newUserId,
                 'password' => $hashedPassword
             ]);
 
-            // C. Wijs Rol, Club en optioneel Team toe in `user_roles`
-            $stmtRole =$pdo->prepare("INSERT INTO user_roles (user_id, role, club_id, team_id) VALUES (:user_id, :role, :club_id, :team_id)");
+            // C. Wijs Rol, Club en optioneel Team toe in user_roles
+            $stmtRole = $pdo->prepare("INSERT INTO user_roles (user_id, role, club_id, team_id) VALUES (:user_id, :role, :club_id, :team_id)");
             $stmtRole->execute([
                 'user_id' => $newUserId,
                 'role'    => $role,
@@ -76,10 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {$naam     = trim($_POST['naam'] ?? '
             ]);
 
             $pdo->commit();
-            $message = "Gebruiker '{$naam}' is succesvol aangemaakt!";
+            $message     = "Gebruiker '" . htmlspecialchars($naam) . "' is succesvol aangemaakt!";
             $messageType = "success";
-        } catch (PDOException $e) {$pdo->rollBack();
-            if ($e->getCode() == '23505') { // Unique constraint violation (e-mail bestaat al)$message = "Dit e-mailadres is al in gebruik.";
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            if ($e->getCode() == '23505') {
+                $message = "Dit e-mailadres is al in gebruik.";
             } else {
                 $message = "Fout bij opslaan: " . $e->getMessage();
             }
@@ -88,27 +91,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {$naam     = trim($_POST['naam'] ?? '
     }
 }
 
-// 3. HAAL CLUBS EN TEAMS OP OP BASIS VAN ROL
+// 3. HAAL CLUBS EN TEAMS OP
 if ($currentUserRole === 'Superadmin') {
-    // Superadmin mag alle clubs zien
-    $clubs =$pdo->query("SELECT id, name FROM clubs ORDER BY name")->fetchAll();
-    $teams =$pdo->query("SELECT id, club_id, name FROM teams ORDER BY name")->fetchAll();
+    $clubs = $pdo->query("SELECT id, name FROM clubs ORDER BY name")->fetchAll();
+    $teams = $pdo->query("SELECT id, club_id, name FROM teams ORDER BY name")->fetchAll();
 } else {
-    // Admin ziet alleen toegewezen club(s)
-    $stmtClubs =$pdo->prepare("
+    $stmtClubs = $pdo->prepare("
         SELECT DISTINCT c.id, c.name 
         FROM clubs c 
         JOIN user_roles ur ON ur.club_id = c.id 
         WHERE ur.user_id = :user_id AND ur.role = 'Admin'
         ORDER BY c.name
     ");
-    $stmtClubs->execute(['user_id' =>$currentUserId]);
-    $clubs =$stmtClubs->fetchAll();
+    $stmtClubs->execute(['user_id' => $currentUserId]);
+    $clubs = $stmtClubs->fetchAll();
 
     $allowedClubIds = array_column($clubs, 'id');
     if (!empty($allowedClubIds)) {
-        $inQuery = implode(',', array_map('intval',$allowedClubIds));
-        $teams =$pdo->query("SELECT id, club_id, name FROM teams WHERE club_id IN ($inQuery) ORDER BY name")->fetchAll();
+        $inQuery = implode(',', array_map('intval', $allowedClubIds));
+        $teams   = $pdo->query("SELECT id, club_id, name FROM teams WHERE club_id IN ($inQuery) ORDER BY name")->fetchAll();
     } else {
         $teams = [];
     }
@@ -177,7 +178,7 @@ if ($currentUserRole === 'Superadmin') {
             <label for="club_id">Vereniging (Club)</label>
             <select id="club_id" name="club_id" required onchange="filterTeams()">
                 <option value="">-- Selecteer Vereniging --</option>
-                <?php foreach ($clubs as$club): ?>
+                <?php foreach ($clubs as $club): ?>
                     <option value="<?= $club['id'] ?>"><?= htmlspecialchars($club['name']) ?></option>
                 <?php endforeach; ?>
             </select>
@@ -187,7 +188,7 @@ if ($currentUserRole === 'Superadmin') {
             <label for="team_id">Team (Optioneel voor Admins)</label>
             <select id="team_id" name="team_id">
                 <option value="">-- Selecteer Team --</option>
-                <?php foreach ($teams as$team): ?>
+                <?php foreach ($teams as $team): ?>
                     <option value="<?= $team['id'] ?>" data-club="<?= $team['club_id'] ?>">
                         <?= htmlspecialchars($team['name']) ?>
                     </option>
@@ -212,14 +213,13 @@ if ($currentUserRole === 'Superadmin') {
 </div>
 
 <script>
-// Filter de teams in de dropdown op basis van de gekozen club
 function filterTeams() {
     const selectedClubId = document.getElementById('club_id').value;
-    const teamSelect = document.getElementById('team-id');
+    const teamSelect = document.getElementById('team_id');
     const options = teamSelect.querySelectorAll('option');
 
     options.forEach(option => {
-        if (!option.value) return; // Sla de placeholder over
+        if (!option.value) return;
         const clubId = option.getAttribute('data-club');
         
         if (selectedClubId && clubId === selectedClubId) {
@@ -229,7 +229,7 @@ function filterTeams() {
         }
     });
 
-    teamSelect.value = ''; // Reset selectie
+    teamSelect.value = '';
 }
 </script>
 
