@@ -373,28 +373,45 @@
 
     <header>
         <h1>⚽ Trainings Registratie</h1>
-        <div class="version-tag">Versie v2.2.0 (2026-09-28)</div>
+        <div class="version-tag">Versie v2.2.1 (2026-09-28)</div>
     </header>
 
     <div class="container">
 
         <!-- STAP 1: LOGIN SCHERM -->
-        <div id="screen-login" class="screen active">
-            <div class="auth-card">
-                <h2>Inloggen</h2>
-                <form id="login-form" onsubmit="handleLogin(event)">
-                    <div class="form-field">
-                        <label for="username">E-mailadres</label>
-                        <input type="email" id="username" required placeholder="bijv. eric@zaandijk.nl">
-                    </div>
-                    <div class="form-field">
-                        <label for="password">Wachtwoord</label>
-                        <input type="password" id="password" required>
-                    </div>
-                    <button type="submit" class="btn">Inloggen</button>
-                </form>
+<div id="screen-login" class="screen active">
+    <div class="auth-card">
+        <h2>Inloggen</h2>
+        <!-- action & method toegevoegd voor Safari herkenning -->
+        <form id="login-form" action="login.php" method="POST" onsubmit="handleLogin(event)">
+            <div class="form-field">
+                <label for="username">E-mailadres</label>
+                <input 
+                    type="email" 
+                    id="username" 
+                    name="username" 
+                    required 
+                    placeholder="bijv. eric@voetbalclub.nl"
+                    autocomplete="username" 
+                    inputmode="email"
+                    autocapitalize="none"
+                    autocorrect="off"
+                >
             </div>
-        </div>
+            <div class="form-field">
+                <label for="password">Wachtwoord</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    required 
+                    autocomplete="current-password"
+                >
+            </div>
+            <button type="submit" class="btn">Inloggen</button>
+        </form>
+    </div>
+</div>
 
         <!-- STAP 2: CONTEXT SELECTIE SCHERM (Club & Team) -->
         <div id="screen-select" class="screen">
