@@ -1,5 +1,9 @@
 <?php
 // admin_users.php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 
 // 1. Database Verbinding via Omgevingsvariabelen
@@ -9,9 +13,7 @@ $dbname   = getenv('DB_NAME') ?: 'trainings_db';
 $user     = getenv('DB_USER') ?: 'postgres';
 $dbPass   = getenv('DB_PASSWORD');
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+
 
 
 try {
