@@ -4,8 +4,15 @@ session_start();
 
 // 1. Database Verbinding via Omgevingsvariabelen
 $host     = getenv('DB_HOST') ?: '127.0.0.1';
-$port     = getenv('DB_PORT') ?: '5432';$dbname   = getenv('DB_NAME') ?: 'trainings_db';
-$user     = getenv('DB_USER') ?: 'postgres';$dbPass   = getenv('DB_PASSWORD');
+$port     = getenv('DB_PORT') ?: '5432';
+$dbname   = getenv('DB_NAME') ?: 'trainings_db';
+$user     = getenv('DB_USER') ?: 'postgres';
+$dbPass   = getenv('DB_PASSWORD');
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 
 try {
     $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
