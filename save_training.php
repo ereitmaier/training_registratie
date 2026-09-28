@@ -4,32 +4,33 @@ header('Content-Type: application/json');
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-if (!$data || !isset($data['namespace'])) {
+if (!$data || !isset($data['namespace']) || !isset($data['filename'])) {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Ongeldige payload']);
     exit;
 }
 
-$baseDir = __DIR__ . '/data';
+$baseDir   = __DIR__ . '/data';
 $targetDir = $baseDir . $data['namespace'];
-$filePath = $targetDir . 'training.json';
+$filePath  = $targetDir . $data['filename'];
 
-// --- FEATURE: BLOKKEER OVERSCHRIJVEN ---
+// Blokkeer overschrijven
 if (file_exists($filePath)) {
     http_response_code(403);
     echo json_encode([
-        'status' => 'error', 
+        'status'  => 'error', 
         'message' => 'Deze training is al opgeslagen en kan niet meer worden gewijzigd!'
     ]);
     exit;
 }
 
+// Maak mappen aan (bijv. /data/ZVV_Zaandijk/VR2/2026/09/)
 if (!is_dir($targetDir)) {
     mkdir($targetDir, 0777, true);
 }
 
 if (file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT))) {
-    echo json_encode(['status' => 'success', 'message' => 'Opgeslagen in ' . $data['namespace']]);
+    echo json_encode(['status' => 'success', 'message' => 'Opgeslagen in ' . $data['namespace'] . $data['filename']]);
 } else {
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'Opslaan mislukt']);

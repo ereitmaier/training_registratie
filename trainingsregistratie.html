@@ -373,7 +373,7 @@
 
     <header>
         <h1>⚽ Trainings Registratie</h1>
-        <div class="version-tag">Versie v2.1.0 (2026-09-28)</div>
+        <div class="version-tag">Versie v2.2.0 (2026-09-28)</div>
     </header>
 
     <div class="container">
@@ -603,7 +603,7 @@
             checkTrainingStatus();
         }
 
-        // 4. DATUM VERGRENDELING CHECK
+        // 4. DATUM VERGRENDELING CHECK & RESET LOGICA
         async function checkTrainingStatus() {
             if (!activeClub || !activeTeam) return;
 
@@ -621,7 +621,9 @@
                     document.getElementById('user-role-badge').style.color = '#ef4444';
                     showToast("🔒 Deze training is al opgeslagen en gesloten voor wijzigingen.");
                 } else {
+                    // Ongebruikte datum geselecteerd -> Formulier leegmaken
                     isLocked = false;
+                    resetForm();
                     if (activeRole !== 'Coach') {
                         lockFormControls(false);
                         document.getElementById('user-role-badge').textContent = `Rol: ${activeRole}`;
@@ -631,6 +633,12 @@
             } catch (err) {
                 console.error("Fout bij status-check:", err);
             }
+        }
+
+        function resetForm() {
+            selectedItems.clear();
+            document.getElementById('training-notes').value = '';
+            renderUI();
         }
 
         function applySavedDataToUI(savedData) {
@@ -852,12 +860,15 @@
         }
 
         function getExportPayload() {
-            const datum = document.getElementById('training-date').value;
+            const datum = document.getElementById('training-date').value; // Formaat: yyyy-mm-dd
             const rawNotities = document.getElementById('training-notes').value;
             const notities = rawNotities ? rawNotities.replace(/\r\n/g, '\n').trim() : '';
 
             const cleanClub = activeClub.name.replace(/[^a-zA-Z0-9_\-]/g, '_');
             const cleanTeam = activeTeam.name.replace(/[^a-zA-Z0-9_\-]/g, '_');
+
+            // Opsplitsen datum voor mappenstructuur
+            const [jaar, maand, dag] = datum.split('-');
 
             const executedItems = [];
             let totalMinutes = 0;
@@ -890,7 +901,8 @@
             });
 
             const payload = {
-                namespace: `/${cleanClub}/${cleanTeam}/${datum}/`,
+                namespace: `/${cleanClub}/${cleanTeam}/${jaar}/${maand}/`,
+                filename: `${datum}-training.json`,
                 club: activeClub.name,
                 team: activeTeam.name,
                 trainer: activeUserName,
@@ -898,7 +910,7 @@
                 notitie: notities,
                 aantal_oefeningen: executedItems.length,
                 onderdelen: executedItems,
-                versie: "v2.1.0"
+                versie: "v2.2.0"
             };
 
             if (!isSimpleMode) {
