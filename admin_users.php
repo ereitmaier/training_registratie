@@ -1,12 +1,27 @@
 <?php
 // admin_users.php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 session_start();
 
-// 1. Database Verbinding via Omgevingsvariabelen
+// 1. BEVEILIGINGSCHECK: Is de gebruiker ingelogd?
+if (!isset($_SESSION['user_id']) || empty($_SESSION['roles'])) {
+    header('Location: trainingsregistratie.html'); // Stuur niet-ingelogde gebruikers terug
+    exit;
+}
+
+// 2. RECHTENCHECK: Is de gebruiker Admin of Superadmin?
+$userRoles = $_SESSION['roles'];
+$isSuperadmin = in_array('Superadmin', $userRoles);
+$isAdmin      = in_array('Admin', $userRoles);
+
+if (!$isSuperadmin && !$isAdmin) {
+    http_response_code(403);
+    die("<h1>403 Toegang Geweigerd</h1><p>Je hebt als Trainer/Coach geen rechten om gebruikers te beheren.</p>");
+}
+
+$currentUserId   = $_SESSION['user_id'];
+$currentUserRole = $isSuperadmin ? 'Superadmin' : 'Admin';
+
+// Database verbinding
 $host     = getenv('DB_HOST') ?: '127.0.0.1';
 $port     = getenv('DB_PORT') ?: '5432';
 $dbname   = getenv('DB_NAME') ?: 'trainings_db';
@@ -23,19 +38,10 @@ try {
     die("Database verbinding mislukt: " . htmlspecialchars($e->getMessage()));
 }
 
-// SIMULATIE / AFHANDELING VAN INGELOGDE BEHEERDER
-$currentUserId   = $_SESSION['user_id'] ?? 1;
-$currentUserRole = $_SESSION['user_role'] ?? 'Admin'; 
-
-if (!in_array($currentUserRole, ['Admin', 'Superadmin'])) {
-    http_response_code(403);
-    die("Toegang geweigerd: Je hebt onvoldoende rechten.");
-}
-
 $message     = '';
 $messageType = '';
 
-// 2. VERWERKING VAN HET FORMULIER (POST)
+// Formulierverwerking (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $naam     = trim($_POST['naam'] ?? '');
     $email    = trim($_POST['email'] ?? '');
@@ -44,7 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $teamId   = !empty($_POST['team_id']) ? intval($_POST['team_id']) : null;
     $role     = $_POST['role'] ?? '';
 
-    if (empty($naam) || empty($email) || empty($password) || empty($role)) {
+    // Extra beveiliging: een gewone Admin mag geen Superadmin of Admin toewijzen
+    if (!$isSuperadmin && in_array($role, ['Superadmin', 'Admin'])) {
+        $message = "Als Admin kun je alleen Trainers en Coaches aanmaken.";
+        $messageType = "error";
+    } elseif (empty($naam) || empty($email) || empty($password) || empty($role)) {
         $message     = "Vul alle verplichte velden in.";
         $messageType = "error";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -54,12 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
 
-            // A. Voeg gebruiker toe aan users
             $stmtUser = $pdo->prepare("INSERT INTO users (naam, email) VALUES (:naam, :email) RETURNING id");
             $stmtUser->execute(['naam' => $naam, 'email' => $email]);
             $newUserId = $stmtUser->fetchColumn();
 
-            // B. Hash wachtwoord en voeg toe aan passwords
             $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
             $stmtPass       = $pdo->prepare("INSERT INTO passwords (user_id, encrypted_password, is_active) VALUES (:user_id, :password, TRUE)");
             $stmtPass->execute([
@@ -67,7 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'password' => $hashedPassword
             ]);
 
-            // C. Wijs Rol, Club en optioneel Team toe in user_roles
             $stmtRole = $pdo->prepare("INSERT INTO user_roles (user_id, role, club_id, team_id) VALUES (:user_id, :role, :club_id, :team_id)");
             $stmtRole->execute([
                 'user_id' => $newUserId,
@@ -91,11 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// 3. HAAL CLUBS EN TEAMS OP
-if ($currentUserRole === 'Superadmin') {
+// HAAL CLUBS EN TEAMS OP
+if ($isSuperadmin) {
     $clubs = $pdo->query("SELECT id, name FROM clubs ORDER BY name")->fetchAll();
     $teams = $pdo->query("SELECT id, club_id, name FROM teams ORDER BY name")->fetchAll();
 } else {
+    // Admin ziet alleen toegewezen club(s)
     $stmtClubs = $pdo->prepare("
         SELECT DISTINCT c.id, c.name 
         FROM clubs c 
@@ -135,7 +143,9 @@ if ($currentUserRole === 'Superadmin') {
         body { background-color: var(--bg); color: var(--text); padding: 20px; }
 
         .container { max-width: 500px; margin: 0 auto; background: var(--card-bg); padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        h1 { font-size: 1.3rem; margin-bottom: 20px; color: #1e293b; text-align: center; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h1 { font-size: 1.2rem; color: #1e293b; }
+        .user-info { font-size: 0.8rem; color: #64748b; text-align: right; }
 
         .form-group { margin-bottom: 14px; }
         label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
@@ -152,7 +162,13 @@ if ($currentUserRole === 'Superadmin') {
 <body>
 
 <div class="container">
-    <h1>👤 Nieuwe Gebruiker Aanmaken</h1>
+    <div class="header-bar">
+        <h1>👤 Gebruiker Toevoegen</h1>
+        <div class="user-info">
+            <strong><?= htmlspecialchars($_SESSION['naam']) ?></strong><br>
+            <small>(<?= htmlspecialchars($currentUserRole) ?>)</small>
+        </div>
+    </div>
 
     <?php if ($message): ?>
         <div class="alert <?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
@@ -201,7 +217,7 @@ if ($currentUserRole === 'Superadmin') {
             <select id="role" name="role" required>
                 <option value="Trainer">Trainer (Lezen & Schrijven)</option>
                 <option value="Coach">Coach (Alleen Lezen)</option>
-                <?php if ($currentUserRole === 'Superadmin'): ?>
+                <?php if ($isSuperadmin): ?>
                     <option value="Admin">Admin (Clubbeheerder)</option>
                     <option value="Superadmin">Superadmin</option>
                 <?php endif; ?>
