@@ -373,7 +373,7 @@
 
     <header>
         <h1>⚽ Trainings Registratie</h1>
-        <div class="version-tag">Versie v1.9.0 (2026-09-28)</div>
+        <div class="version-tag">Versie v2.0.0 (2026-09-28)</div>
     </header>
 
     <div class="container">
@@ -384,8 +384,8 @@
                 <h2>Inloggen</h2>
                 <form id="login-form" onsubmit="handleLogin(event)">
                     <div class="form-field">
-                        <label for="username">Gebruikersnaam</label>
-                        <input type="text" id="username" required placeholder="bijv. eric@zaandijk.nl">
+                        <label for="username">E-mailadres</label>
+                        <input type="email" id="username" required placeholder="bijv. eric@zaandijk.nl">
                     </div>
                     <div class="form-field">
                         <label for="password">Wachtwoord</label>
@@ -423,7 +423,7 @@
             <div class="panel">
                 <div class="form-group">
                     <label for="training-date">Datum Training:</label>
-                    <input type="date" id="training-date">
+                    <input type="date" id="training-date" onchange="checkTrainingStatus()">
                 </div>
                 <div class="form-group-column">
                     <label for="training-notes">Notities / Opmerkingen:</label>
@@ -473,6 +473,7 @@
         let selectedItems = new Set();
         let allExpanded = false;
         let isSimpleMode = false;
+        let isLocked = false;
 
         // Inlog & Context Status
         let sessionData = null; 
@@ -505,20 +506,18 @@
                 const result = await response.json();
 
                 if (response.ok && result.status === 'success') {
-                    sessionData = result.data; // Bevat toegewezen clubs, teams & rollen
+                    sessionData = result.data;
                     evaluateContextNavigation();
                 } else {
                     showToast(`⚠️ ${result.message || 'Inloggen mislukt'}`);
                 }
             } catch (err) {
-                // FALLBACK MOCK DATA voor testen zonder backend
-                console.warn("Geen login.php server gevonden, start in testmodus.");
+                console.warn("Geen backend gevonden, start in testmodus.");
                 sessionData = getMockUserData();
                 evaluateContextNavigation();
             }
         }
 
-        // Mock Data voor lokaal testen
         function getMockUserData() {
             return {
                 assignments: [
@@ -527,11 +526,9 @@
             };
         }
 
-        // 2. CONTEXT NAVIGATIE LOGICA (Skip indien exact 1 optie)
+        // 2. CONTEXT NAVIGATIE LOGICA
         function evaluateContextNavigation() {
             const assignments = sessionData.assignments;
-
-            // Unieke clubs ophalen
             const clubs = [...new Map(assignments.map(a => [a.club_id, a.club_name])).entries()];
 
             if (clubs.length === 1) {
@@ -594,17 +591,65 @@
             document.getElementById('active-context-label').textContent = `${activeClub.name} > ${activeTeam.name}`;
             document.getElementById('user-role-badge').textContent = `Rol: ${activeRole}`;
 
-            // Indien alleen-lezen (Coach)
             if (activeRole === 'Coach') {
-                document.getElementById('btn-save').disabled = true;
-                document.getElementById('training-notes').disabled = true;
+                lockFormControls(true);
             }
 
             showScreen('screen-app');
             loadYamlTemplate();
+            checkTrainingStatus();
         }
 
-        // 4. YAML LADEN EN APPLICATIE-LOGICA
+        // 4. DATUM VERGRENDELING CHECK
+        async function checkTrainingStatus() {
+            if (!activeClub || !activeTeam) return;
+
+            const datum = document.getElementById('training-date').value;
+
+            try {
+                const response = await fetch(`check_training.php?club=${encodeURIComponent(activeClub.name)}&team=${encodeURIComponent(activeTeam.name)}&datum=${datum}`);
+                const result = await response.json();
+
+                if (result.exists) {
+                    isLocked = true;
+                    applySavedDataToUI(result.data);
+                    lockFormControls(true);
+                    document.getElementById('user-role-badge').textContent = `Status: Vergrendeld (Opgeslagen)`;
+                    document.getElementById('user-role-badge').style.color = '#ef4444';
+                    showToast("🔒 Deze training is al opgeslagen en gesloten voor wijzigingen.");
+                } else {
+                    isLocked = false;
+                    if (activeRole !== 'Coach') {
+                        lockFormControls(false);
+                        document.getElementById('user-role-badge').textContent = `Rol: ${activeRole}`;
+                        document.getElementById('user-role-badge').style.color = '#059669';
+                    }
+                }
+            } catch (err) {
+                console.error("Fout bij status-check:", err);
+            }
+        }
+
+        function applySavedDataToUI(savedData) {
+            selectedItems.clear();
+            if (savedData && savedData.notitie) {
+                document.getElementById('training-notes').value = savedData.notitie;
+            }
+            if (savedData && Array.isArray(savedData.onderdelen)) {
+                savedData.onderdelen.forEach(item => {
+                    selectedItems.add(`${item.sectie}_${item.id}`);
+                });
+            }
+            renderUI();
+        }
+
+        function lockFormControls(locked) {
+            document.getElementById('btn-save').disabled = locked;
+            document.getElementById('btn-save').textContent = locked ? "🔒 AL OPGESLAGEN" : "💾 OPSLAAN OP SERVER";
+            document.getElementById('training-notes').disabled = locked;
+        }
+
+        // 5. YAML LADEN EN APPLICATIE-LOGICA
         async function loadYamlTemplate() {
             try {
                 const response = await fetch('training-template.yaml');
@@ -744,7 +789,7 @@
         }
 
         function toggleItem(sectionKey, id) {
-            if (activeRole === 'Coach') return; // Alleen-lezen voor Coach
+            if (activeRole === 'Coach' || isLocked) return;
 
             const itemKey = `${sectionKey}_${id}`;
             const card = document.getElementById(`card-${itemKey}`);
@@ -808,7 +853,6 @@
             const rawNotities = document.getElementById('training-notes').value;
             const notities = rawNotities ? rawNotities.replace(/\r\n/g, '\n').trim() : '';
 
-            // Schoon opmaak van club en team namen voor namespace paden
             const cleanClub = activeClub.name.replace(/[^a-zA-Z0-9_\-]/g, '_');
             const cleanTeam = activeTeam.name.replace(/[^a-zA-Z0-9_\-]/g, '_');
 
@@ -850,7 +894,7 @@
                 notitie: notities,
                 aantal_oefeningen: executedItems.length,
                 onderdelen: executedItems,
-                versie: "v1.9.0"
+                versie: "v2.0.0"
             };
 
             if (!isSimpleMode) {
@@ -862,8 +906,8 @@
         }
 
         async function saveToServer() {
-            if (activeRole === 'Coach') {
-                showToast("⚠️ Geen schrijfrechten (Rol: Coach)");
+            if (activeRole === 'Coach' || isLocked) {
+                showToast("⚠️ Deze training is vergrendeld of je hebt alleen leesrechten.");
                 return;
             }
 
@@ -885,6 +929,7 @@
 
                 if (response.ok && result.status === 'success') {
                     showToast(`✅ ${result.message}`);
+                    checkTrainingStatus(); // Vergrendel direct na opslaan
                 } else {
                     showToast(`⚠️ Server fout: ${result.message || 'Onbekend'}`);
                 }

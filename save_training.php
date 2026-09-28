@@ -10,16 +10,23 @@ if (!$data || !isset($data['namespace'])) {
     exit;
 }
 
-// Bepaal pad op basis van namespace
 $baseDir = __DIR__ . '/data';
 $targetDir = $baseDir . $data['namespace'];
+$filePath = $targetDir . 'training.json';
 
-// Maak de mappenstructuur aan indien deze nog niet bestaat
+// --- FEATURE: BLOKKEER OVERSCHRIJVEN ---
+if (file_exists($filePath)) {
+    http_response_code(403);
+    echo json_encode([
+        'status' => 'error', 
+        'message' => 'Deze training is al opgeslagen en kan niet meer worden gewijzigd!'
+    ]);
+    exit;
+}
+
 if (!is_dir($targetDir)) {
     mkdir($targetDir, 0777, true);
 }
-
-$filePath = $targetDir . 'training.json';
 
 if (file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT))) {
     echo json_encode(['status' => 'success', 'message' => 'Opgeslagen in ' . $data['namespace']]);
