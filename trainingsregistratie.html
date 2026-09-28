@@ -373,7 +373,7 @@
 
     <header>
         <h1>⚽ Trainings Registratie</h1>
-        <div class="version-tag">Versie v2.0.0 (2026-09-28)</div>
+        <div class="version-tag">Versie v2.1.0 (2026-09-28)</div>
     </header>
 
     <div class="container">
@@ -480,6 +480,7 @@
         let activeClub = null;
         let activeTeam = null;
         let activeRole = null;
+        let activeUserName = '';
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('training-date').valueAsDate = new Date();
@@ -520,6 +521,7 @@
 
         function getMockUserData() {
             return {
+                naam: "Eric Reitmaier",
                 assignments: [
                     { club_id: 1, club_name: "ZVV Zaandijk", team_id: 101, team_name: "VR2", role: "Trainer" }
                 ]
@@ -588,6 +590,7 @@
 
         // 3. APPLICATIE STARTEN
         function startApp() {
+            activeUserName = sessionData.naam || '';
             document.getElementById('active-context-label').textContent = `${activeClub.name} > ${activeTeam.name}`;
             document.getElementById('user-role-badge').textContent = `Rol: ${activeRole}`;
 
@@ -890,11 +893,12 @@
                 namespace: `/${cleanClub}/${cleanTeam}/${datum}/`,
                 club: activeClub.name,
                 team: activeTeam.name,
+                trainer: activeUserName,
                 datum: datum,
                 notitie: notities,
                 aantal_oefeningen: executedItems.length,
                 onderdelen: executedItems,
-                versie: "v2.0.0"
+                versie: "v2.1.0"
             };
 
             if (!isSimpleMode) {
@@ -929,7 +933,7 @@
 
                 if (response.ok && result.status === 'success') {
                     showToast(`✅ ${result.message}`);
-                    checkTrainingStatus(); // Vergrendel direct na opslaan
+                    checkTrainingStatus();
                 } else {
                     showToast(`⚠️ Server fout: ${result.message || 'Onbekend'}`);
                 }
@@ -947,6 +951,9 @@
             }
 
             let text = `📋 *Trainingsregistratie ${payload.team} (${payload.datum})*\n`;
+            if (payload.trainer) {
+                text += `👤 *Trainer:* ${payload.trainer}\n`;
+            }
             if (payload.notitie) {
                 text += `📝 *Notities:*\n${payload.notitie}\n\n`;
             }
