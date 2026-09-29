@@ -52,3 +52,32 @@ CREATE TABLE user_roles (
 CREATE INDEX idx_passwords_user_active ON passwords(user_id, is_active);
 CREATE INDEX idx_user_roles_user ON user_roles(user_id);
 CREATE INDEX idx_teams_club ON teams(club_id);
+
+
+
+-- Basistabel voor een trainingssessie
+CREATE TABLE trainingen (
+    id SERIAL PRIMARY KEY,
+    club_id INT REFERENCES clubs(id),
+    team_id INT REFERENCES teams(id),
+    user_id INT REFERENCES users(id), -- Wie heeft de training geregistreerd
+    datum DATE NOT NULL,
+    notitie TEXT,
+    versie VARCHAR(10),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_training_per_team_dag UNIQUE (club_id, team_id, datum)
+);
+
+-- Koppeltabel voor de geselecteerde oefeningen/onderdelen
+CREATE TABLE training_onderdelen (
+    id SERIAL PRIMARY KEY,
+    training_id INT REFERENCES trainingen(id) ON DELETE CASCADE,
+    sectie VARCHAR(50) NOT NULL,
+    oefening_id INT NOT NULL,
+    oefening_naam VARCHAR(100) NOT NULL,
+    duur_minuten INT DEFAULT 0,
+    intensiteit VARCHAR(20)
+);
+
+CREATE INDEX IF NOT EXISTS idx_trainingen_lookup ON trainingen(club_id, team_id, datum);
+CREATE INDEX IF NOT EXISTS idx_onderdelen_training ON training_onderdelen(training_id);
