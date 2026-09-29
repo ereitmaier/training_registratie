@@ -66,6 +66,8 @@ if ($action === 'options') {
 }
 
 // ROUTE 2: Haal trainingsdata op
+
+// ROUTE 2: Haal trainingsdata op
 $club       = $_GET['club'] ?? '';
 $team       = $_GET['team'] ?? '';
 $startDate  = $_GET['start_date'] ?? '';
@@ -78,6 +80,7 @@ if (!$club || !$startDate || !$endDate) {
 }
 
 try {
+    // SQL query ondersteunt nu 'Alle' teams en is ongevoelig voor hoofdletters
     $sql = "
         SELECT 
             t.datum,
@@ -93,21 +96,23 @@ try {
         JOIN clubs c ON t.club_id = c.id
         JOIN teams tm ON t.team_id = tm.id
         JOIN training_onderdelen to_sub ON to_sub.training_id = t.id
-        WHERE c.name = :club
-          AND (:team = '' OR :team = 'Alle' OR tm.name = :team)
+        WHERE c.name ILIKE :club
+          AND (:team = '' OR :team = 'Alle' OR tm.name ILIKE :team)
           AND t.datum BETWEEN :start_date AND :end_date
         ORDER BY t.datum DESC;
     ";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
-        'club'       => $club,
-        'team'       => $team,
+        'club'       => trim($club),
+        'team'       => trim($team),
         'start_date' => $startDate,
         'end_date'   => $endDate
     ]);
 
     $records = $stmt->fetchAll();
+    
+    // Geef de records netjes als JSON array terug
     echo json_encode($records);
 
 } catch (PDOException $e) {
